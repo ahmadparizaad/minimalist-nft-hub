@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -13,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Clock, ArrowRight, Tag, Repeat, Shield, Info, ExternalLink, Share2 } from "lucide-react";
+import { contractAddress } from "@/context/secret_final";
 
 export default function NFTDetail() {
   const { id } = useParams<{ id: string }>();
@@ -30,20 +30,15 @@ export default function NFTDetail() {
       try {
         if (!id) return;
         
-        // Convert id to number and fetch NFT details
         const tokenId = parseInt(id);
         const nftDetails = await getNFTDetails(tokenId);
         
         if (nftDetails) {
           setNft(nftDetails);
           
-          // Fetch transaction history
           const txHistory = await getTransactionHistory(tokenId);
           
-          // Convert transaction history to Transaction objects
           const formattedTxs: Transaction[] = txHistory.map((tx: string, index: number) => {
-            // Parse the transaction string - format may vary based on your contract implementation
-            // This is a simple example assuming the string has a format like "buy:0xaddr1:0xaddr2:price:timestamp"
             const parts = tx.split(':');
             const txType = parts[0] as 'mint' | 'buy' | 'sell' | 'transfer' | 'list' | 'unlist';
             
@@ -56,7 +51,7 @@ export default function NFTDetail() {
               price: parseFloat(parts[3] || '0'),
               currency: 'USDC',
               timestamp: parts[4] || new Date().toISOString(),
-              txHash: `0x${Math.random().toString(16).slice(2, 66)}` // Mock txHash
+              txHash: `0x${Math.random().toString(16).slice(2, 66)}`
             };
           });
           
@@ -83,20 +78,17 @@ export default function NFTDetail() {
     
     if (!nft) return;
     
-    // Check if user owns the NFT
     if (nft.owner === account) {
       toast.error("You already own this NFT");
       return;
     }
     
-    // Check if user has sufficient sFuel
     if (!checkSufficientSFuel(sFuelBalance)) {
       toast.error("Insufficient sFuel for transaction");
       requestSFuel();
       return;
     }
     
-    // Check if user has sufficient balance
     if (!checkSufficientBalance(usdcBalance, nft.price)) {
       toast.error(
         "Insufficient balance to purchase this NFT. Please add more USDC to your wallet.",
@@ -113,14 +105,11 @@ export default function NFTDetail() {
     setIsPurchasing(true);
     
     try {
-      // Call buyNFT function from Web3Context
       await buyNFT(parseInt(nft.id.toString()));
       
-      // Reload NFT details after purchase
       const updatedNft = await getNFTDetails(parseInt(nft.id.toString()));
       setNft(updatedNft);
       
-      // Add purchase transaction to history
       const newTransaction: Transaction = {
         id: `tx-${Date.now()}`,
         type: 'buy',
@@ -184,7 +173,6 @@ export default function NFTDetail() {
       <main className="flex-1 pt-20 px-4">
         <div className="container mx-auto max-w-6xl py-12">
           <div className="flex flex-col lg:flex-row gap-12">
-            {/* NFT Image Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -230,7 +218,6 @@ export default function NFTDetail() {
               </div>
             </motion.div>
             
-            {/* NFT Details Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

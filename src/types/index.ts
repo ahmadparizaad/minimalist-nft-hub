@@ -1,3 +1,4 @@
+
 export interface NFT {
   id: string;
   tokenId: number;
@@ -17,11 +18,38 @@ export interface NFT {
   attributes: NFTAttribute[];
   royaltyFee: number;
   ipfsHash: string;
+  collectionId?: string;
 }
 
 export interface NFTAttribute {
   trait_type: string;
   value: string | number;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  banner: string;
+  creator: string;
+  verified: boolean;
+  items: number;
+  owners: number;
+  floorPrice: number;
+  volumeTraded: number;
+}
+
+export interface Creator {
+  id: string;
+  name: string;
+  address: string;
+  avatar: string;
+  bio: string;
+  verified: boolean;
+  volumeTraded: number;
+  followers: number;
+  following: number;
 }
 
 export interface MarketplaceFilters {
@@ -46,8 +74,8 @@ export interface Transaction {
   nftId: string;
   from: string;
   to: string;
-  price: number;
-  currency: string;
+  price?: number;
+  currency?: string;
   timestamp: string;
   txHash: string;
 }
@@ -61,4 +89,11 @@ export interface Web3State {
   isLoading: boolean;
   hasRequestedSFuel: boolean;
   error: string | null;
+}
+
+// Add ethereum window type definition
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
 }

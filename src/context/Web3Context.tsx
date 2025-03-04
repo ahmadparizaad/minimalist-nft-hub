@@ -70,7 +70,7 @@ async function claimSFuel(
   const gasLimit = ethers.BigNumber.from("100000"); // Example gas limit
 
   const miner = new Miner();
-  const { gasPrice, iterations } = await miner.mineGasForTransaction(nonce, gasLimit, randomWallet.address);
+  const { gasPrice, iterations } = await miner.mineGasForTransaction(nonce, Number(gasLimit), randomWallet.address);
   console.log("Mined gasPrice:", gasPrice.toString(), "iterations:", iterations);
 
   // Build data payload: function signature + target address (padded)

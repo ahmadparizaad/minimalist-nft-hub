@@ -27,6 +27,8 @@ export const generateMockNFTs = (count: number): NFT[] => {
       { trait_type: 'Level', value: Math.floor(Math.random() * 100) }
     ],
     createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
+    metadataURI: `ipfs://mock-uri-${i+1}`,
+    ipfsHash: `mock-hash-${i+1}`,
     collectionId: `collection-${Math.floor(Math.random() * 5) + 1}`
   }));
 };
