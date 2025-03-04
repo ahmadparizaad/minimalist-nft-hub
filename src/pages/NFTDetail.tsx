@@ -13,11 +13,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Clock, ArrowRight, Tag, Repeat, Shield, Info, ExternalLink, Share2 } from "lucide-react";
-import { generateMockNFTs, generateMockTransactions } from "@/utils/ipfs";
 
 export default function NFTDetail() {
   const { id } = useParams<{ id: string }>();
-  const { web3State, connectWallet, requestSFuel } = useWeb3();
+  const { web3State, connectWallet, requestSFuel, getNFTDetails, buyNFT, getTransactionHistory } = useWeb3();
   const { isConnected, account, sFuelBalance, usdcBalance } = web3State;
   
   const [nft, setNft] = useState<NFT | null>(null);
@@ -29,14 +28,39 @@ export default function NFTDetail() {
     const fetchNFTData = async () => {
       setIsLoading(true);
       try {
-        // In a real app, we would fetch from API/blockchain
-        const mockNFTs = generateMockNFTs(10);
-        const foundNFT = mockNFTs.find(nft => nft.id === id);
+        if (!id) return;
         
-        if (foundNFT) {
-          setNft(foundNFT);
-          const mockTransactions = generateMockTransactions(5, [foundNFT.id]);
-          setTransactions(mockTransactions);
+        // Convert id to number and fetch NFT details
+        const tokenId = parseInt(id);
+        const nftDetails = await getNFTDetails(tokenId);
+        
+        if (nftDetails) {
+          setNft(nftDetails);
+          
+          // Fetch transaction history
+          const txHistory = await getTransactionHistory(tokenId);
+          
+          // Convert transaction history to Transaction objects
+          const formattedTxs: Transaction[] = txHistory.map((tx: string, index: number) => {
+            // Parse the transaction string - format may vary based on your contract implementation
+            // This is a simple example assuming the string has a format like "buy:0xaddr1:0xaddr2:price:timestamp"
+            const parts = tx.split(':');
+            const txType = parts[0] as 'mint' | 'buy' | 'sell' | 'transfer' | 'list' | 'unlist';
+            
+            return {
+              id: `tx-${index}`,
+              type: txType,
+              nftId: id,
+              from: parts[1] || '',
+              to: parts[2] || '',
+              price: parseFloat(parts[3] || '0'),
+              currency: 'USDC',
+              timestamp: parts[4] || new Date().toISOString(),
+              txHash: `0x${Math.random().toString(16).slice(2, 66)}` // Mock txHash
+            };
+          });
+          
+          setTransactions(formattedTxs);
         }
       } catch (error) {
         console.error("Error fetching NFT data:", error);
@@ -49,7 +73,7 @@ export default function NFTDetail() {
     if (id) {
       fetchNFTData();
     }
-  }, [id]);
+  }, [id, getNFTDetails, getTransactionHistory]);
 
   const handlePurchase = async () => {
     if (!isConnected) {
@@ -89,34 +113,29 @@ export default function NFTDetail() {
     setIsPurchasing(true);
     
     try {
-      // Simulate purchase
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call buyNFT function from Web3Context
+      await buyNFT(parseInt(nft.id.toString()));
       
-      // Update NFT ownership (in a real app, this would be done on the blockchain)
-      if (nft) {
-        const updatedNFT = { ...nft, owner: account ?? "", isListed: false };
-        setNft(updatedNFT);
-        
-        // Add purchase transaction
-        const newTransaction: Transaction = {
-          id: `tx-${Date.now()}`,
-          type: 'buy',
-          nftId: nft.id,
-          from: nft.owner,
-          to: account ?? "",
-          price: nft.price,
-          currency: nft.currency,
-          timestamp: new Date().toISOString(),
-          txHash: `0x${Math.random().toString(16).slice(2, 66)}`
-        };
-        
-        setTransactions([newTransaction, ...transactions]);
-        
-        toast.success("Successfully purchased NFT!");
-      }
+      // Reload NFT details after purchase
+      const updatedNft = await getNFTDetails(parseInt(nft.id.toString()));
+      setNft(updatedNft);
+      
+      // Add purchase transaction to history
+      const newTransaction: Transaction = {
+        id: `tx-${Date.now()}`,
+        type: 'buy',
+        nftId: nft.id,
+        from: nft.owner,
+        to: account ?? "",
+        price: nft.price,
+        currency: nft.currency,
+        timestamp: new Date().toISOString(),
+        txHash: `0x${Math.random().toString(16).slice(2, 66)}`
+      };
+      
+      setTransactions([newTransaction, ...transactions]);
     } catch (error) {
       console.error("Error purchasing NFT:", error);
-      toast.error("Transaction failed. Please try again.");
     } finally {
       setIsPurchasing(false);
     }
@@ -345,7 +364,7 @@ export default function NFTDetail() {
                   <div className="space-y-4">
                     <div className="flex justify-between p-3 border-b border-border/30">
                       <p className="text-muted-foreground">Contract Address</p>
-                      <p className="font-medium">{formatAddress("0x1234567890abcdef1234567890abcdef12345678")}</p>
+                      <p className="font-medium">{formatAddress(contractAddress)}</p>
                     </div>
                     <div className="flex justify-between p-3 border-b border-border/30">
                       <p className="text-muted-foreground">Token ID</p>
@@ -360,7 +379,11 @@ export default function NFTDetail() {
                       <p className="font-medium">{new Date(nft.createdAt).toLocaleDateString()}</p>
                     </div>
                     <Button variant="outline" className="w-full flex gap-2" asChild>
-                      <a href="#" target="_blank" rel="noopener noreferrer">
+                      <a 
+                        href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/token/${contractAddress}?a=${nft.tokenId}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
                         <span>View on Explorer</span>
                         <ExternalLink className="h-4 w-4" />
                       </a>

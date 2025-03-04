@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -18,7 +19,7 @@ import { UploadCloud, Image, AlertTriangle } from "lucide-react";
 import { NFTAttribute } from "@/types";
 
 export default function Mint() {
-  const { web3State, connectWallet, requestSFuel } = useWeb3();
+  const { web3State, connectWallet, requestSFuel, mintNFT } = useWeb3();
   const { isConnected, account, sFuelBalance } = web3State;
   
   const [title, setTitle] = useState("");
@@ -96,6 +97,10 @@ export default function Mint() {
       setMintingStep(1);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate upload delay
       
+      // In a real implementation, you would upload the image to IPFS here
+      // For now, we'll use a mock IPFS hash
+      const mockIpfsHash = "QmXExS4BMc1YrH6iWERyryFJHfFpZkJw9g2TgXSz9BZAhB";
+      
       const metadata = {
         title,
         description,
@@ -111,34 +116,45 @@ export default function Mint() {
       };
       
       setMintingStep(2);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate upload delay
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate metadata upload delay
       
       setMintingStep(3);
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate minting delay
       
-      toast.success("NFT minted successfully!");
+      // Call the mintNFT function from the Web3Context
+      const result = await mintNFT({
+        ipfsHash: mockIpfsHash,
+        price,
+        royaltyFee: royaltyFee / 100,
+        title,
+        description
+      });
       
-      setTitle("");
-      setDescription("");
-      setPrice("0.1");
-      setRoyaltyFee(2.5);
-      setCategory("Art");
-      setRarity("Common");
-      setIsListed(true);
-      setTokenStandard("ERC-721");
-      setAttributes([
-        { trait_type: "Background", value: "Blue" },
-        { trait_type: "Level", value: 1 }
-      ]);
-      setImageFile(null);
-      setImagePreview(null);
-      setMintingStep(0);
+      if (result) {
+        toast.success("NFT minted successfully!");
+        
+        // Reset form
+        setTitle("");
+        setDescription("");
+        setPrice("0.1");
+        setRoyaltyFee(2.5);
+        setCategory("Art");
+        setRarity("Common");
+        setIsListed(true);
+        setTokenStandard("ERC-721");
+        setAttributes([
+          { trait_type: "Background", value: "Blue" },
+          { trait_type: "Level", value: 1 }
+        ]);
+        setImageFile(null);
+        setImagePreview(null);
+      }
       
     } catch (error) {
       console.error("Error minting NFT:", error);
       toast.error("Failed to mint NFT. Please try again.");
     } finally {
       setIsMinting(false);
+      setMintingStep(0);
     }
   };
 
