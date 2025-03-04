@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { ethers } from 'ethers';
 import { Web3State } from '@/types';
@@ -135,7 +134,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   
   const getSkaleProvider = async () => {
     try {
-      const skaleProvider = new ethers.providers.JsonRpcProvider(SKALE_RPC_URL);
+      // Creating a custom network definition to avoid ENS lookups
+      const customNetwork = {
+        name: "SKALE Calypso Hub Testnet",
+        chainId: parseInt(SKALE_CHAIN_ID, 16),
+        ensAddress: null  // Set to null to disable ENS lookups
+      };
+      
+      const skaleProvider = new ethers.providers.JsonRpcProvider(SKALE_RPC_URL, customNetwork);
       console.log("SKALE provider initialized:", skaleProvider);
       setProvider(skaleProvider);
       return skaleProvider;
@@ -233,7 +239,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const accountAddress = accounts[0];
       
-      const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+      // Create a custom network definition to avoid ENS lookups
+      const customNetwork = {
+        name: "SKALE Calypso Hub Testnet",
+        chainId: parseInt(SKALE_CHAIN_ID, 16),
+        ensAddress: null  // Set to null to disable ENS lookups
+      };
+      
+      const browserProvider = new ethers.providers.Web3Provider(window.ethereum, customNetwork);
       const signerInstance = browserProvider.getSigner();
       const contractWithSigner = new ethers.Contract(contractAddress, abi, signerInstance);
       
@@ -586,6 +599,13 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       }
       
       const contractWithSigner = contract.connect(signer);
+      console.log("Creating token with:", {
+        ipfsHash,
+        formattedPrice: formattedPrice.toString(),
+        formattedRoyaltyFee: formattedRoyaltyFee.toString(),
+        paymentToken
+      });
+      
       const tx = await contractWithSigner.createToken(ipfsHash, formattedPrice, formattedRoyaltyFee, paymentToken);
       
       toast.success("Transaction submitted. Waiting for confirmation...");
@@ -720,7 +740,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         if (accounts.length) {
           const accountAddress = accounts[0];
           
-          const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+          // Create a custom network definition to avoid ENS lookups
+          const customNetwork = {
+            name: "SKALE Calypso Hub Testnet",
+            chainId: parseInt(SKALE_CHAIN_ID, 16),
+            ensAddress: null  // Set to null to disable ENS lookups
+          };
+          
+          const browserProvider = new ethers.providers.Web3Provider(window.ethereum, customNetwork);
           const signerInstance = browserProvider.getSigner();
           const contractWithSigner = new ethers.Contract(contractAddress, abi, signerInstance);
           
