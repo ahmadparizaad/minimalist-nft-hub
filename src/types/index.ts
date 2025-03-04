@@ -1,4 +1,3 @@
-
 export interface NFT {
   id: string;
   tokenId: number;
@@ -91,7 +90,6 @@ export interface Web3State {
   error: string | null;
 }
 
-// Add ethereum window type definition
 declare global {
   interface Window {
     ethereum?: any;

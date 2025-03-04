@@ -3,6 +3,11 @@
 
 interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string;
+  readonly VITE_PINATA_JWT: string;
+  readonly VITE_GATEWAY_URL: string;
+  readonly VITE_API_Key: string;
+  readonly VITE_API_Secret: string;
+  readonly VITE_FILETO_IPFH: string;
   // more env variables...
 }
 
