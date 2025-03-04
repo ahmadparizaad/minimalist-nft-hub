@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -61,7 +60,10 @@ export default function Mint() {
   
   const handleAttributeChange = (index: number, field: "trait_type" | "value", value: string | number) => {
     const newAttributes = [...attributes];
-    newAttributes[index][field] = value;
+    newAttributes[index] = {
+      ...newAttributes[index],
+      [field]: value
+    };
     setAttributes(newAttributes);
   };
   
@@ -81,7 +83,6 @@ export default function Mint() {
       return;
     }
     
-    // Check if user has sufficient sFuel
     if (!checkSufficientSFuel(sFuelBalance)) {
       toast.error("Insufficient sFuel for transaction");
       requestSFuel();
@@ -92,7 +93,6 @@ export default function Mint() {
     setMintingStep(1);
     
     try {
-      // Step 1: Upload image to IPFS
       setMintingStep(1);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate upload delay
       
@@ -110,17 +110,14 @@ export default function Mint() {
         createdAt: new Date().toISOString()
       };
       
-      // Step 2: Upload metadata to IPFS
       setMintingStep(2);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate upload delay
       
-      // Step 3: Mint NFT on blockchain
       setMintingStep(3);
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate minting delay
       
       toast.success("NFT minted successfully!");
       
-      // Clear form
       setTitle("");
       setDescription("");
       setPrice("0.1");
@@ -167,7 +164,6 @@ export default function Mint() {
           </motion.div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Image Upload Section */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -219,7 +215,6 @@ export default function Mint() {
               </Card>
             </motion.div>
             
-            {/* Metadata Form Section */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -373,7 +368,6 @@ export default function Mint() {
                           placeholder="Value" 
                           value={attr.value?.toString() || ''}
                           onChange={(e) => {
-                            // Try to convert to number if possible
                             const value = isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value);
                             handleAttributeChange(index, "value", value);
                           }} 
