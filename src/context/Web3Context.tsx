@@ -239,7 +239,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const accountAddress = accounts[0];
       
-      const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+      // Create a custom network definition to avoid ENS lookups
+      const customNetwork = {
+        name: "SKALE Calypso Hub Testnet",
+        chainId: parseInt(SKALE_CHAIN_ID, 16),
+        ensAddress: null  // Set to null to disable ENS lookups
+      };
+      
+      const browserProvider = new ethers.providers.Web3Provider(window.ethereum, customNetwork);
       const signerInstance = browserProvider.getSigner();
       const contractWithSigner = new ethers.Contract(contractAddress, abi, signerInstance);
       
@@ -735,7 +742,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         if ((accounts as string[]).length) {
           const accountAddress = accounts[0];
           
-          const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+          // Create a custom network definition to avoid ENS lookups
+          const customNetwork = {
+            name: "SKALE Calypso Hub Testnet",
+            chainId: parseInt(SKALE_CHAIN_ID, 16),
+            ensAddress: null  // Set to null to disable ENS lookups
+          };
+          
+          const browserProvider = new ethers.providers.Web3Provider(window.ethereum, customNetwork);
           const signerInstance = browserProvider.getSigner();
           const contractWithSigner = new ethers.Contract(contractAddress, abi, signerInstance);
           
