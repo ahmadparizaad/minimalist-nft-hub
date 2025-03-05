@@ -97,7 +97,7 @@ const Web3Context = createContext<{
   disconnectWallet: () => void;
   requestSFuel: () => Promise<void>;
   switchNetwork: (chainId: number) => Promise<void>;
-  mintNFT: (data: { ipfsHash: string, price: string, royaltyFee: string, title?: string, description?: string }) => Promise<any>;
+  mintNFT: (data: { ipfsHash: string, price: string, royaltyFee: string, title?: string, description?: string }) => Promise<unknown>;
   buyNFT: (tokenId: number) => Promise<void>;
   getAllNFTs: () => Promise<unknown[]>;
   getNFTDetails: (tokenId: number) => Promise<unknown>;
@@ -376,10 +376,10 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to switch network:", error);
       setWeb3State(prev => ({ 
         ...prev, 
-        error: error.message,
+        error: (error as Error).message,
         isLoading: false 
       }));
-      toast.error('Failed to switch network: ' + error.message);
+      toast.error('Failed to switch network: ' + (error as Error).message);
     }
   };
   
@@ -431,9 +431,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
 
       setNfts(nftsArray);
       return nftsArray;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching NFTs:", error);
-      toast.error("Failed to load NFTs: " + error.message);
+      toast.error("Failed to load NFTs: " + (error as Error).message);
       return [];
     }
   };
@@ -474,9 +474,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       };
       
       return nft;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching NFT details:", error);
-      toast.error("Failed to load NFT details: " + error.message);
+      toast.error("Failed to load NFT details: " + (error as Error).message);
       return null;
     }
   };
@@ -548,7 +548,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       );
     
       // Remove null values (NFTs not owned by the connected account)
-      const myNftsList = nftsData.filter((nft) => nft !== null) as any[];
+      const myNftsList = nftsData.filter((nft) => nft !== null) as unknown[];
     
       setMyNfts(myNftsList);
       return myNftsList;
@@ -570,7 +570,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   }: { 
     ipfsHash: string, 
     price: string, 
-    royaltyFee: number,
+    royaltyFee: string,
     title?: string,
     description?: string
   }) => {
@@ -717,7 +717,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       setWeb3State(prev => ({ ...prev, isLoading: false }));
       toast.success("You successfully purchased this NFT!");
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error buying NFT:", error);
       
       let errorMessage = "Transaction failed";
@@ -800,7 +800,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           }
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to check wallet connection:", error);
     }
   };
