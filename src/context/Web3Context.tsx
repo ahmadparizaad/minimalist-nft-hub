@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { ethers } from 'ethers';
 import { Web3State } from '@/types';
@@ -98,11 +97,11 @@ const Web3Context = createContext<{
   disconnectWallet: () => void;
   requestSFuel: () => Promise<void>;
   switchNetwork: (chainId: number) => Promise<void>;
-  mintNFT: (data: { ipfsHash: string, price: string, royaltyFee: number, title?: string, description?: string }) => Promise<any>;
+  mintNFT: (data: { ipfsHash: string, price: string, royaltyFee: string, title?: string, description?: string }) => Promise<any>;
   buyNFT: (tokenId: number) => Promise<void>;
-  getAllNFTs: () => Promise<any[]>;
-  getNFTDetails: (tokenId: number) => Promise<any>;
-  getMyNFTs: () => Promise<any[]>;
+  getAllNFTs: () => Promise<unknown[]>;
+  getNFTDetails: (tokenId: number) => Promise<unknown>;
+  getMyNFTs: () => Promise<unknown[]>;
   getTransactionHistory: (tokenId: number) => Promise<string[]>;
 }>({
   web3State: initialState,
@@ -124,8 +123,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [provider, setProvider] = useState<ethers.providers.Provider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [nfts, setNfts] = useState<any[]>([]);
-  const [myNfts, setMyNfts] = useState<any[]>([]);
+  const [nfts, setNfts] = useState<unknown[]>([]);
+  const [myNfts, setMyNfts] = useState<unknown[]>([]);
   
   const SKALE_CHAIN_ID = "0x3a14269b"; // SKALE network chain ID in hex
   const SKALE_RPC_URL = "https://testnet.skalenodes.com/v1/giant-half-dual-testnet";
@@ -135,7 +134,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   
   const getSkaleProvider = async () => {
     try {
-      const skaleProvider = new ethers.providers.JsonRpcProvider(SKALE_RPC_URL);
+      // Creating a custom network definition to avoid ENS lookups
+      const customNetwork = {
+        name: "SKALE Calypso Hub Testnet",
+        chainId: parseInt(SKALE_CHAIN_ID, 16),
+        ensAddress: null  // Set to null to disable ENS lookups
+      };
+      
+      const skaleProvider = new ethers.providers.JsonRpcProvider(SKALE_RPC_URL, customNetwork);
       console.log("SKALE provider initialized:", skaleProvider);
       setProvider(skaleProvider);
       return skaleProvider;
@@ -172,7 +178,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         params: [{ chainId: SKALE_CHAIN_ID }]
       });
       console.log("Switched to SKALE network");
-    } catch (error: any) {
+    } catch (error) {
       // 4902 error code indicates the chain has not been added
       if (error.code === 4902) {
         try {
@@ -272,11 +278,11 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       // Fetch NFTs after successful connection
       getAllNFTs();
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Wallet connection error:", error);
       setWeb3State({
         ...initialState,
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
         isLoading: false
       });
       toast.error("Failed to connect wallet: " + error.message);
@@ -323,14 +329,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       }
       
       toast.success('sFuel received successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error requesting sFuel:", error);
       setWeb3State(prev => ({ 
         ...prev, 
-        error: error.message,
+        error: (error as Error).message,
         isLoading: false 
       }));
-      toast.error('Failed to request sFuel: ' + error.message);
+      toast.error('Failed to request sFuel: ' + (error as Error).message);
     }
   };
   
@@ -359,7 +365,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       }));
       
       toast.success(`Switched to network ID: ${chainId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to switch network:", error);
       setWeb3State(prev => ({ 
         ...prev, 
@@ -476,10 +482,11 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       }
       
       const transactions = await contract.GetTransactionHistory(tokenId);
+      console.log("Transaction history for NFT #", tokenId, ":", transactions);
       return transactions;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching transaction history:", error);
-      toast.error("Failed to load transaction history: " + error.message);
+      toast.error("Failed to load transaction history: " + (error as Error).message);
       return [];
     }
   };
@@ -539,9 +546,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       setMyNfts(myNftsList);
       return myNftsList;
     
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching my NFTs:", error);
-      toast.error("Failed to load your NFTs: " + error.message);
+      toast.error("Failed to load your NFTs: " + (error as Error).message);
       return [];
     }
   };
@@ -567,7 +574,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     
     try {
       setWeb3State(prev => ({ ...prev, isLoading: true }));
-      
+      console.log("Minting NFT...");
       const paymentToken = USDC_CONTRACT_ADDRESS; // USDC address
       const tokenDecimals = 6;
       
@@ -578,22 +585,31 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       }
       
       const formattedPrice = ethers.utils.parseUnits(price.toString(), tokenDecimals);
-      const formattedRoyaltyFee = ethers.utils.parseUnits(royaltyFee.toString(), tokenDecimals);
+      const formattedRoyaltyFee = ethers.utils.parseUnits((royaltyFee).toString(), tokenDecimals);
       
       // Check if sFuel is needed
       if (web3State.sFuelBalance <= 0.001) {
+        console.log("Requesting sFuel...");
         await requestSFuel();
       }
-      
+      console.log("Creating NFT...");
       const contractWithSigner = contract.connect(signer);
+      console.log("Contract with signer:", contractWithSigner);
+      console.log("IPFS Hash:", ipfsHash);
+      console.log("Formatted Price:", formattedPrice);
+      console.log("Royalty Fee:", royaltyFee);
+            console.log("Formatted Royalty Fee:", formattedRoyaltyFee);
+      console.log("Type of formatted Royalty Fee:", typeof(formattedRoyaltyFee));
+
+      console.log("Payment Token:", paymentToken);
       const tx = await contractWithSigner.createToken(ipfsHash, formattedPrice, formattedRoyaltyFee, paymentToken);
-      
+      console.log("Transaction hash:", tx.hash);
       toast.success("Transaction submitted. Waiting for confirmation...");
       
       const receipt = await tx.wait();
       
       // Get the token ID from the Transfer event
-      const tokenId = receipt.events.find((event: any) => event.event === "Transfer")?.args[2].toString();
+      const tokenId = receipt.events.find((event: { event: string; args: [string, string, ethers.BigNumber] }) => event.event === "Transfer")?.args[2].toString();
       
       if (!tokenId) {
         throw new Error("Failed to get token ID from transaction receipt");
@@ -610,9 +626,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         creator: nftDetails.creator,
         owner: nftDetails.owner,
         price: parseFloat(ethers.utils.formatUnits(nftDetails.price, 6)),
-        ipfsHash: ipfsHash,
-        image: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
-        metadataURI: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
+        // image: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
+        // metadataURI: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
         royaltyFee: royaltyFee,
         title: title,
         description: description,
@@ -636,10 +651,10 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       setWeb3State(prev => ({ ...prev, isLoading: false }));
       
       return newNft;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error minting NFT:", error);
-      setWeb3State(prev => ({ ...prev, isLoading: false, error: error.message }));
-      toast.error("Failed to mint NFT: " + error.message);
+      setWeb3State(prev => ({ ...prev, isLoading: false, error: (error as Error).message }));
+      toast.error("Failed to mint NFT: " + (error as Error).message);
       return null;
     }
   };
@@ -717,7 +732,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       if (window.ethereum) {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         
-        if (accounts.length) {
+        if ((accounts as string[]).length) {
           const accountAddress = accounts[0];
           
           const browserProvider = new ethers.providers.Web3Provider(window.ethereum);

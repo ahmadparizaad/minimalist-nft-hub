@@ -99,22 +99,52 @@ export default function Mint() {
       
       // In a real implementation, you would upload the image to IPFS here
       // For now, we'll use a mock IPFS hash
-      const mockIpfsHash = "QmXExS4BMc1YrH6iWERyryFJHfFpZkJw9g2TgXSz9BZAhB";
+      // const mockIpfsHash = "QmXExS4BMc1YrH6iWERyryFJHfFpZkJw9g2TgXSz9BZAhB";
       
       const metadata = {
-        title,
         description,
-        price: parseFloat(price),
-        royaltyFee: royaltyFee / 100,
+        price: parseFloat(price).toString(),
+        royaltyFee: (royaltyFee).toString(),
         category,
         rarity,
-        isListed,
+        isListed: isListed.toString(),
         tokenStandard,
-        attributes,
-        creator: account,
+        attributes: JSON.stringify(attributes),
         createdAt: new Date().toISOString()
       };
-      
+      const options = JSON.stringify({
+        cidVersion: 0,
+      });
+
+      const formData = new FormData();
+      formData.append("file", imageFile);
+      formData.append("pinataMetadata", JSON.stringify({
+        name: title, // Add the name field here
+        keyvalues: metadata
+      }));
+      formData.append("pinataOptions", options);  
+      console.log(formData);
+      console.log(import.meta.env.VITE_PINATA_JWT);
+      const res = await fetch(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_PINATA_JWT}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Pinata API error:", errorData);
+        throw new Error(`Pinata API error: ${errorData.error}`);
+      }
+
+      const resData = await res.json();
+      console.log(resData);
+
       setMintingStep(2);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate metadata upload delay
       
@@ -122,9 +152,9 @@ export default function Mint() {
       
       // Call the mintNFT function from the Web3Context
       const result = await mintNFT({
-        ipfsHash: mockIpfsHash,
+        ipfsHash: resData.IpfsHash,
         price,
-        royaltyFee: royaltyFee / 100,
+        royaltyFee: (royaltyFee).toString(),
         title,
         description
       });

@@ -31,12 +31,13 @@ export default function NFTDetail() {
         if (!id) return;
         
         const tokenId = parseInt(id);
-        const nftDetails = await getNFTDetails(tokenId);
+        const nftDetails = await getNFTDetails(tokenId) as NFT;
         
         if (nftDetails) {
           setNft(nftDetails);
           
           const txHistory = await getTransactionHistory(tokenId);
+          console.log("txHistory", txHistory);
           
           const formattedTxs: Transaction[] = txHistory.map((tx: string, index: number) => {
             const parts = tx.split(':');
@@ -108,7 +109,7 @@ export default function NFTDetail() {
       await buyNFT(parseInt(nft.id.toString()));
       
       const updatedNft = await getNFTDetails(parseInt(nft.id.toString()));
-      setNft(updatedNft);
+      setNft(updatedNft as NFT);
       
       const newTransaction: Transaction = {
         id: `tx-${Date.now()}`,

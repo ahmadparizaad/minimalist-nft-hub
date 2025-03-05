@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useWeb3 } from "@/context/Web3Context";
 
 // Default filters
 const defaultFilters: MarketplaceFilters = {
@@ -28,6 +29,7 @@ const defaultFilters: MarketplaceFilters = {
 };
 
 export default function Marketplace() {
+  const { getAllNFTs } = useWeb3();
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [filteredNfts, setFilteredNfts] = useState<NFT[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +46,8 @@ export default function Marketplace() {
       setIsLoading(true);
       try {
         // In a real app, these would be API calls
-        const mockNFTs = generateMockNFTs(24);
+        // const mockNFTs = generateMockNFTs(24);
+        const mockNFTs = await getAllNFTs() as NFT[];
         setNfts(mockNFTs);
         setFilteredNfts(mockNFTs);
         
@@ -280,7 +283,7 @@ export default function Marketplace() {
         <h3 className="text-lg font-medium mb-3">Sort By</h3>
         <select
           value={filters.sortBy}
-          onChange={(e) => handleFilterChange({ sortBy: e.target.value as any })}
+          onChange={(e) => handleFilterChange({ sortBy: e.target.value as string })}
           className="w-full border border-border rounded-md p-2"
         >
           <option value="recently_listed">Recently Listed</option>
