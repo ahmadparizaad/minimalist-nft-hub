@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -16,60 +15,54 @@ import { Copy, ExternalLink, Edit, CheckCircle2, Share2 } from "lucide-react";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
-  const { web3State } = useWeb3();
+  const { web3State, getAllNFTs,getMyNFTs } = useWeb3();
   const { account } = web3State;
-  
+  const [nfts, setNfts] = useState([]);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [ownedNFTs, setOwnedNFTs] = useState<NFT[]>([]);
   const [createdNFTs, setCreatedNFTs] = useState<NFT[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("owned");
-  
+
   const isOwner = address === account || !address;
   const profileAddress = address || account;
+  console.log("Address Prop:", address);
+  console.log("Address Prop2:", account);
+console.log("Account:", account);
+console.log("Final Profile Address:", profileAddress);
+
+  useEffect(() => {
+    console.log("Profile Address:", profileAddress);
+  }, [profileAddress]);
+
+  useEffect(() => {
+    const storedNFTs = JSON.parse(localStorage.getItem("mintedNFTs") || "[]");
+    setNfts(storedNFTs);
+  }, []);
   
+
   useEffect(() => {
     const fetchProfileData = async () => {
       setIsLoading(true);
       try {
-        // In a real app, these would be API calls
-        const mockCreators = generateMockCreators(5);
-        const mockNFTs = generateMockNFTs(12);
-        
-        // Find or create creator
-        let creator = mockCreators.find(c => c.address === profileAddress);
-        if (!creator && profileAddress) {
-          creator = {
-            id: `creator-${Date.now()}`,
-            name: `User ${profileAddress?.substring(2, 6)}`,
-            address: profileAddress,
-            avatar: `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`,
-            bio: "No bio provided",
-            verified: false,
-            volumeTraded: 0,
-            followers: 0,
-            following: 0
-          };
-        }
-        
-        setCreator(creator || null);
-        
-        // Filter NFTs
-        const owned = mockNFTs.filter(nft => nft.owner === profileAddress);
-        const created = mockNFTs.filter(nft => nft.creator === profileAddress);
-        
-        setOwnedNFTs(owned);
-        setCreatedNFTs(created);
-        
-        // Get transactions
-        if (profileAddress) {
-          const nftIds = [...owned, ...created].map(nft => nft.id);
-          const mockTransactions = generateMockTransactions(10, nftIds)
-            .filter(tx => tx.from === profileAddress || tx.to === profileAddress);
-          
-          setTransactions(mockTransactions);
-        }
+        const allNFTs = await getAllNFTs();
+        console.log("Fetched NFTs in profile:", allNFTs);
+        setAllNfts(allNFTs); // Store ALL NFTs in a separate state
+
+        {allNFTs.length > 0 ? (
+          allNFTs.map(nft => (
+              <div key={nft.id} className="nft-card">
+                  <img src={nft.image} alt={nft.title} />
+                  <h3>{nft.title}</h3>
+                  <p>{nft.description}</p>
+              </div>
+          ))
+      ) : (
+          <p>No NFTs owned.</p>
+      )}
+      
+
       } catch (error) {
         console.error("Error fetching profile data:", error);
         toast.error("Failed to load profile data");
@@ -77,11 +70,18 @@ export default function Profile() {
         setIsLoading(false);
       }
     };
-    
+  
     if (profileAddress) {
+      console.log("Fetching NFTs for:", profileAddress);
       fetchProfileData();
     }
-  }, [profileAddress, account]);
+  }, [profileAddress]);
+  
+  // In your component's state:
+  const [allNfts, setAllNfts] = useState<any[]>([]); // All NFTs
+  const [profileNfts, setProfileNfts] = useState<any[]>([]); // Profile-specific NFTs
+  
+
 
   const handleCopyAddress = () => {
     if (profileAddress) {
@@ -133,12 +133,12 @@ export default function Profile() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1 pt-20">
+        
         {/* Banner */}
         <div className="h-48 md:h-64 bg-gradient-to-r from-primary/30 to-primary/10">
           {isOwner && (
@@ -150,7 +150,7 @@ export default function Profile() {
             </div>
           )}
         </div>
-        
+
         <div className="container mx-auto max-w-6xl px-4">
           {/* Profile Information */}
           <motion.div
@@ -161,9 +161,9 @@ export default function Profile() {
           >
             <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
               <div className="relative">
-                <img 
-                  src={creator?.avatar || `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`} 
-                  alt="Profile" 
+                <img
+                  src={creator?.avatar || `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`}
+                  alt="Profile"
                   className="w-32 h-32 rounded-full border-4 border-background object-cover"
                 />
                 {creator?.verified && (
@@ -172,16 +172,16 @@ export default function Profile() {
                   </div>
                 )}
                 {isOwner && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="absolute bottom-0 right-0 bg-white/80 backdrop-blur-sm rounded-full p-1 h-8 w-8"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                 )}
               </div>
-              
+
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                   <h1 className="text-2xl md:text-3xl font-display font-bold">
@@ -194,7 +194,7 @@ export default function Profile() {
                     </span>
                   )}
                 </div>
-                
+
                 <div className="flex items-center mt-2 text-muted-foreground">
                   <span className="font-mono">{formatAddress(profileAddress)}</span>
                   <Button variant="ghost" size="icon" onClick={handleCopyAddress} className="h-8 w-8">
@@ -206,12 +206,12 @@ export default function Profile() {
                     </a>
                   </Button>
                 </div>
-                
+
                 <p className="mt-2 text-muted-foreground">
                   {creator?.bio || "No bio provided"}
                 </p>
               </div>
-              
+
               <div className="flex gap-2 mt-4 md:mt-0">
                 {!isOwner && (
                   <Button variant="outline">
@@ -229,7 +229,7 @@ export default function Profile() {
                 )}
               </div>
             </div>
-            
+
             <div className="grid grid-cols-3 md:w-auto md:inline-grid gap-6 mt-6 bg-muted/30 rounded-xl p-4">
               <div className="text-center">
                 <p className="text-2xl font-display font-bold">{ownedNFTs.length}</p>
@@ -245,7 +245,7 @@ export default function Profile() {
               </div>
             </div>
           </motion.div>
-          
+
           {/* Tabs */}
           <Tabs defaultValue="owned" value={activeTab} onValueChange={setActiveTab} className="mb-8">
             <TabsList className="w-full">
@@ -268,31 +268,22 @@ export default function Profile() {
                 </span>
               </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="owned" className="mt-6">
-              {ownedNFTs.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {ownedNFTs.map((nft, index) => (
-                    <NFTCard key={nft.id} nft={nft} index={index} />
+
+            <TabsContent value="owned">
+              {allNfts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {allNfts.map((nft) => (
+                    <NFTCard key={nft.id} nft={nft} />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 border border-dashed border-border rounded-xl">
-                  <h3 className="text-xl font-display font-medium mb-2">No NFTs owned yet</h3>
-                  <p className="text-muted-foreground mb-6">
-                    {isOwner 
-                      ? "Start your collection by buying NFTs from the marketplace"
-                      : "This user doesn't own any NFTs yet"}
-                  </p>
-                  {isOwner && (
-                    <Button>
-                      Browse Marketplace
-                    </Button>
-                  )}
-                </div>
+                <p className="text-muted-foreground text-center mt-4">
+                  No NFTs owned.
+                </p>
               )}
             </TabsContent>
-            
+
+
             <TabsContent value="created" className="mt-6">
               {createdNFTs.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -304,7 +295,7 @@ export default function Profile() {
                 <div className="text-center py-16 border border-dashed border-border rounded-xl">
                   <h3 className="text-xl font-display font-medium mb-2">No NFTs created yet</h3>
                   <p className="text-muted-foreground mb-6">
-                    {isOwner 
+                    {isOwner
                       ? "Start creating your own NFTs to display them here"
                       : "This user hasn't created any NFTs yet"}
                   </p>
@@ -316,7 +307,7 @@ export default function Profile() {
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="activity" className="mt-6">
               {transactions.length > 0 ? (
                 <div className="space-y-4">
@@ -330,7 +321,7 @@ export default function Profile() {
                         {tx.type === 'list' && <span className="text-lg">📋</span>}
                         {tx.type === 'unlist' && <span className="text-lg">🚫</span>}
                       </div>
-                      
+
                       <div className="flex-1">
                         <div className="flex justify-between">
                           <div>
@@ -365,7 +356,7 @@ export default function Profile() {
                 <div className="text-center py-16 border border-dashed border-border rounded-xl">
                   <h3 className="text-xl font-display font-medium mb-2">No activity yet</h3>
                   <p className="text-muted-foreground">
-                    {isOwner 
+                    {isOwner
                       ? "Your transaction history will appear here"
                       : "This user doesn't have any activity yet"}
                   </p>
@@ -375,7 +366,7 @@ export default function Profile() {
           </Tabs>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

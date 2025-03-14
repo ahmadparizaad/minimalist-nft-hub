@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -143,14 +142,13 @@ export default function Mint() {
       }
 
       const resData = await res.json();
-      console.log(resData);
+      console.log("ttt",resData);
 
       setMintingStep(2);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate metadata upload delay
       
       setMintingStep(3);
       
-      // Call the mintNFT function from the Web3Context
       const result = await mintNFT({
         ipfsHash: resData.IpfsHash,
         price,
@@ -161,23 +159,27 @@ export default function Mint() {
       
       if (result) {
         toast.success("NFT minted successfully!");
-        
+      
+        // Store NFT in local storage
+        const mintedNFTs = JSON.parse(localStorage.getItem("mintedNFTs") || "[]");
+        const newNFT = {
+          title,
+          description,
+          imageUrl: `https://gateway.pinata.cloud/ipfs/${resData.IpfsHash}`,
+          price,
+          owner: account, // Store wallet address
+        };
+      
+        localStorage.setItem("mintedNFTs", JSON.stringify([...mintedNFTs, newNFT]));
+      
         // Reset form
         setTitle("");
         setDescription("");
         setPrice("0.1");
-        setRoyaltyFee(2.5);
-        setCategory("Art");
-        setRarity("Common");
-        setIsListed(true);
-        setTokenStandard("ERC-721");
-        setAttributes([
-          { trait_type: "Background", value: "Blue" },
-          { trait_type: "Level", value: 1 }
-        ]);
         setImageFile(null);
         setImagePreview(null);
       }
+      
       
     } catch (error) {
       console.error("Error minting NFT:", error);

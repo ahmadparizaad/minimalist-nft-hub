@@ -390,16 +390,16 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         console.error("Contract is not defined");
         return [];
       }
-      
+  
       const tokenCount = await contract.GetCurrentToken();
       const tokenId = tokenCount.toNumber();
       console.log("Total NFTs:", tokenId);
-
+  
       const nftsArray = [];
-
+  
       for (let i = tokenId; i >= 1; i--) {
         const nftDetails = await contract.getNFTDetails(i);
-        
+  
         const nft = {
           id: i,
           tokenId: i,
@@ -413,10 +413,10 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           royaltyFee: parseFloat(ethers.utils.formatUnits(nftDetails.royaltyFee, 6)),
           transactionHistory: nftDetails.transactionHistory,
           currency: 'USDC',
-          title: `NFT #${i}`, // These would come from IPFS metadata in a real implementation
-          description: "NFT Description", // These would come from IPFS metadata in a real implementation
-          category: "Art", // These would come from IPFS metadata in a real implementation
-          rarity: "Common", // These would come from IPFS metadata in a real implementation
+          title: `NFT #${i}`,
+          description: "NFT Description",
+          category: "Art",
+          rarity: "Common",
           tokenStandard: "ERC-721",
           isListed: true,
           createdAt: new Date().toISOString(),
@@ -425,18 +425,18 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
             { trait_type: "Background", value: "Blue" }
           ]
         };
-        
+  
         nftsArray.push(nft);
       }
-
-      setNfts(nftsArray);
+  
       return nftsArray;
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Error fetching NFTs:", error);
-      toast.error("Failed to load NFTs: " + (error as Error).message);
+      toast.error("Failed to load NFTs: " + error.message);
       return [];
     }
   };
+  
   
   // Get details of a specific NFT
   const getNFTDetails = async (tokenId: number) => {
@@ -460,10 +460,10 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         royaltyFee: parseFloat(ethers.utils.formatUnits(nftDetails.royaltyFee, 6)),
         transactionHistory: nftDetails.transactionHistory,
         currency: 'USDC',
-        title: `NFT #${tokenId}`, // These would come from IPFS metadata in a real implementation
-        description: "NFT Description", // These would come from IPFS metadata in a real implementation
-        category: "Art", // These would come from IPFS metadata in a real implementation
-        rarity: "Common", // These would come from IPFS metadata in a real implementation
+        title: `NFT #${tokenId}`, 
+        description: "NFT Description", 
+        category: "Art", 
+        rarity: "Common",
         tokenStandard: "ERC-721",
         isListed: true,
         createdAt: new Date().toISOString(),
