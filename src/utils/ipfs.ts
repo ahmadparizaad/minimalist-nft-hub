@@ -1,115 +1,415 @@
+import { NFT, Collection, Creator } from "@/types";
+import { nftAPI } from "@/api/apiService";
 
-// This file would contain actual IPFS implementation in a production app
-// For now, we'll use mock implementations
-
-import { NFT, Collection, Creator, Transaction } from '@/types';
-
-// Mock data generators
-export const generateMockNFTs = (count: number): NFT[] => {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `nft-${i+1}`,
-    tokenId: i + 1,
-    title: `NFT #${i + 1}`,
-    description: `This is a description for NFT #${i + 1}. It's a unique digital asset stored on the blockchain.`,
-    image: `https://source.unsplash.com/random/600x600?nft&sig=${i}`,
-    price: parseFloat((Math.random() * 10 + 0.1).toFixed(2)),
-    currency: 'USDC',
-    owner: `0x${Math.random().toString(16).slice(2, 42)}`,
-    creator: `0x${Math.random().toString(16).slice(2, 42)}`,
-    royaltyFee: parseFloat((Math.random() * 0.1).toFixed(2)),
-    isListed: Math.random() > 0.3,
-    category: ['Art', 'Collectible', 'Photography', 'Music', 'Video'][Math.floor(Math.random() * 5)],
-    rarity: ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'][Math.floor(Math.random() * 5)],
-    tokenStandard: Math.random() > 0.5 ? 'ERC-721' : 'ERC-1155',
+export const mockNFTs: NFT[] = [
+  {
+    id: "1",
+    tokenId: 1,
+    title: "Abstract Painting",
+    description: "A vibrant abstract painting with bold colors.",
+    image:
+      "https://images.unsplash.com/photo-1603412554934-0c9c55319907?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    price: 1.5,
+    currency: "USDC",
+    owner: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    creator: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    royaltyFee: 0.025,
+    isListed: true,
+    category: "Art",
+    rarity: "Rare",
+    tokenStandard: "ERC-721",
     attributes: [
-      { trait_type: 'Background', value: ['Red', 'Blue', 'Green', 'Purple', 'Yellow'][Math.floor(Math.random() * 5)] },
-      { trait_type: 'Eyes', value: ['Round', 'Square', 'Oval', 'Diamond'][Math.floor(Math.random() * 4)] },
-      { trait_type: 'Level', value: Math.floor(Math.random() * 100) }
+      { trait_type: "Style", value: "Abstract" },
+      { trait_type: "Color", value: "Vibrant" },
     ],
-    createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-    metadataURI: `ipfs://mock-uri-${i+1}`,
-    ipfsHash: `mock-hash-${i+1}`,
-    collectionId: `collection-${Math.floor(Math.random() * 5) + 1}`
-  }));
-};
+    ipfsHash: "QmXExS4BMc1YrH6iWERyryFJHfFpZkJw9g2TgXSz9BZAhB",
+    metadataURI: "ipfs://QmXExS4BMc1YrH6iWERyryFJHfFpZkJw9g2TgXSz9BZAhB",
+    collectionId: "101",
+    utilityPercent: 0.85,
+    transactionHistory: [],
+    createdAt: new Date(),
+  },
+  {
+    id: "2",
+    tokenId: 2,
+    title: "Pixel Art Character",
+    description: "A unique pixel art character design.",
+    image:
+      "https://images.unsplash.com/photo-1635032545724-2774e7554064?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    price: 0.75,
+    currency: "USDC",
+    owner: "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+    creator: "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+    royaltyFee: 0.05,
+    isListed: false,
+    category: "Collectible",
+    rarity: "Uncommon",
+    tokenStandard: "ERC-721",
+    attributes: [
+      { trait_type: "Type", value: "Character" },
+      { trait_type: "Style", value: "Pixel Art" },
+    ],
+    ipfsHash: "QmYtXKiYueo6XMTvPguLnP5j1nsZUNWvnYyJ9UhRExeW6K",
+    metadataURI: "ipfs://QmYtXKiYueo6XMTvPguLnP5j1nsZUNWvnYyJ9UhRExeW6K",
+    collectionId: "102",
+    utilityPercent: 0.6,
+    transactionHistory: [],
+    createdAt: new Date(),
+  },
+  {
+    id: "3",
+    tokenId: 3,
+    title: "Nature Photography",
+    description: "A stunning photograph of a mountain landscape.",
+    image:
+      "https://images.unsplash.com/photo-1464822759023-fed622ffc2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    price: 2.0,
+    currency: "USDC",
+    owner: "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    creator: "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    royaltyFee: 0.02,
+    isListed: true,
+    category: "Photography",
+    rarity: "Common",
+    tokenStandard: "ERC-721",
+    attributes: [
+      { trait_type: "Location", value: "Mountains" },
+      { trait_type: "Season", value: "Summer" },
+    ],
+    ipfsHash: "QmZqS9n9e7qa4t9s9t9s9t9s9t9s9t9s9t9s9t9s9t",
+    metadataURI: "ipfs://QmZqS9n9e7qa4t9s9t9s9t9s9t9s9t9s9t9s9t9s9t",
+    collectionId: "103",
+    utilityPercent: 0.7,
+    transactionHistory: [],
+    createdAt: new Date(),
+  },
+  {
+    id: "4",
+    tokenId: 4,
+    title: "Digital Music Track",
+    description: "An original electronic music track.",
+    image:
+      "https://images.unsplash.com/photo-1508700942705-0c74999ca8ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    price: 1.0,
+    currency: "USDC",
+    owner: "0x9965507D1a55bcC2695C58ba16FB37610f09aDb1",
+    creator: "0x9965507D1a55bcC2695C58ba16FB37610f09aDb1",
+    royaltyFee: 0.03,
+    isListed: true,
+    category: "Music",
+    rarity: "Uncommon",
+    tokenStandard: "ERC-1155",
+    attributes: [
+      { trait_type: "Genre", value: "Electronic" },
+      { trait_type: "Duration", value: "3:45" },
+    ],
+    ipfsHash: "QmWsVt9vsVt9vsVt9vsVt9vsVt9vsVt9vsVt9vsVt9vsV",
+    metadataURI: "ipfs://QmWsVt9vsVt9vsVt9vsVt9vsVt9vsVt9vsVt9vsVt9vsV",
+    collectionId: "104",
+    utilityPercent: 0.9,
+    transactionHistory: [],
+    createdAt: new Date(),
+  },
+  {
+    id: "5",
+    tokenId: 5,
+    title: "Animated Video Clip",
+    description: "A short animated video clip.",
+    image:
+      "https://images.unsplash.com/photo-1534452203419-466ef4aef88a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    price: 2.5,
+    currency: "USDC",
+    owner: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    creator: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    royaltyFee: 0.04,
+    isListed: false,
+    category: "Video",
+    rarity: "Rare",
+    tokenStandard: "ERC-1155",
+    attributes: [
+      { trait_type: "Animation Style", value: "3D" },
+      { trait_type: "Duration", value: "0:30" },
+    ],
+    ipfsHash: "QmRvXrvXrvXrvXrvXrvXrvXrvXrvXrvXrvXrvXrvXrv",
+    metadataURI: "ipfs://QmRvXrvXrvXrvXrvXrvXrvXrvXrvXrvXrvXrvXrv",
+    collectionId: "105",
+    utilityPercent: 0.75,
+    transactionHistory: [],
+    createdAt: new Date(),
+  },
+];
 
-export const generateMockCollections = (count: number): Collection[] => {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `collection-${i+1}`,
-    name: `Collection ${i+1}`,
-    description: `This is collection #${i+1} featuring unique digital assets.`,
-    image: `https://source.unsplash.com/random/600x600?collection&sig=${i}`,
-    banner: `https://source.unsplash.com/random/1200x400?banner&sig=${i}`,
-    creator: `0x${Math.random().toString(16).slice(2, 42)}`,
-    verified: Math.random() > 0.7,
-    items: Math.floor(Math.random() * 100) + 10,
-    owners: Math.floor(Math.random() * 50) + 5,
-    floorPrice: parseFloat((Math.random() * 5 + 0.1).toFixed(2)),
-    volumeTraded: parseFloat((Math.random() * 100 + 10).toFixed(2))
-  }));
-};
+export const mockCollections: Collection[] = [
+  {
+    id: "101",
+    name: "Abstract Art",
+    description: "A collection of abstract art pieces.",
+    image:
+      "https://images.unsplash.com/photo-1603412554934-0c9c55319907?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    bannerImage:
+      "https://images.unsplash.com/photo-1603412554934-0c9c55319907?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    creator: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    category: "Art",
+    nfts: [],
+    floorPrice: 1.5,
+    totalVolume: 100,
+    royaltyFee: 0.025,
+    isVerified: true,
+    createdAt: new Date(),
+  },
+  {
+    id: "102",
+    name: "Pixel Art",
+    description: "A collection of pixel art characters.",
+    image:
+      "https://images.unsplash.com/photo-1635032545724-2774e7554064?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    bannerImage:
+      "https://images.unsplash.com/photo-1635032545724-2774e7554064?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    creator: "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+    category: "Collectible",
+    nfts: [],
+    floorPrice: 0.75,
+    totalVolume: 50,
+    royaltyFee: 0.05,
+    isVerified: false,
+    createdAt: new Date(),
+  },
+  {
+    id: "103",
+    name: "Nature",
+    description: "A collection of nature photographs.",
+    image:
+      "https://images.unsplash.com/photo-1464822759023-fed622ffc2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    bannerImage:
+      "https://images.unsplash.com/photo-1464822759023-fed622ffc2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    creator: "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    category: "Photography",
+    nfts: [],
+    floorPrice: 2.0,
+    totalVolume: 75,
+    royaltyFee: 0.02,
+    isVerified: true,
+    createdAt: new Date(),
+  },
+  {
+    id: "104",
+    name: "Music",
+    description: "A collection of music tracks.",
+    image:
+      "https://images.unsplash.com/photo-1508700942705-0c74999ca8ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    bannerImage:
+      "https://images.unsplash.com/photo-1508700942705-0c74999ca8ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    creator: "0x9965507D1a55bcC2695C58ba16FB37610f09aDb1",
+    category: "Music",
+    nfts: [],
+    floorPrice: 1.0,
+    totalVolume: 25,
+    royaltyFee: 0.03,
+    isVerified: false,
+    createdAt: new Date(),
+  },
+  {
+    id: "105",
+    name: "Video",
+    description: "A collection of video clips.",
+    image:
+      "https://images.unsplash.com/photo-1534452203419-466ef4aef88a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    bannerImage:
+      "https://images.unsplash.com/photo-1534452203419-466ef4aef88a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    creator: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    category: "Video",
+    nfts: [],
+    floorPrice: 2.5,
+    totalVolume: 150,
+    royaltyFee: 0.04,
+    isVerified: true,
+    createdAt: new Date(),
+  },
+];
 
-export const generateMockCreators = (count: number): Creator[] => {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `creator-${i+1}`,
-    name: `Creator ${i+1}`,
-    address: `0x${Math.random().toString(16).slice(2, 42)}`,
-    avatar: `https://source.unsplash.com/random/300x300?avatar&sig=${i}`,
-    bio: `Digital artist specializing in ${['abstract', 'portrait', 'landscape', 'pixel art', '3D'][Math.floor(Math.random() * 5)]} art.`,
-    verified: Math.random() > 0.7,
-    volumeTraded: parseFloat((Math.random() * 1000 + 50).toFixed(2)),
-    followers: Math.floor(Math.random() * 1000) + 10,
-    following: Math.floor(Math.random() * 100) + 5
-  }));
-};
+export const mockCreators: Creator[] = [
+  {
+    id: "1",
+    address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    username: "AbstractArtist",
+    bio: "Creating abstract art for the digital age.",
+    profileImage:
+      "https://images.unsplash.com/photo-1603412554934-0c9c55319907?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    coverImage:
+      "https://images.unsplash.com/photo-1603412554934-0c9c55319907?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    email: "abstract@example.com",
+    socials: {
+      twitter: "@AbstractArtist",
+      instagram: "@abstract_art",
+      website: "https://abstract.com",
+    },
+    nftsCreated: [],
+    nftsOwned: [],
+    collectionsCreated: [],
+    totalVolume: 100,
+    isVerified: true,
+    createdAt: new Date(),
+  },
+  {
+    id: "2",
+    address: "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+    username: "PixelMaster",
+    bio: "Crafting pixel art characters with love.",
+    profileImage:
+      "https://images.unsplash.com/photo-1635032545724-2774e7554064?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    coverImage:
+      "https://images.unsplash.com/photo-1635032545724-2774e7554064?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    email: "pixel@example.com",
+    socials: {
+      twitter: "@PixelMaster",
+      instagram: "@pixel_art",
+      website: "https://pixel.com",
+    },
+    nftsCreated: [],
+    nftsOwned: [],
+    collectionsCreated: [],
+    totalVolume: 50,
+    isVerified: false,
+    createdAt: new Date(),
+  },
+  {
+    id: "3",
+    address: "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    username: "NaturePhotographer",
+    bio: "Capturing the beauty of nature through photography.",
+    profileImage:
+      "https://images.unsplash.com/photo-1464822759023-fed622ffc2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    coverImage:
+      "https://images.unsplash.com/photo-1464822759023-fed622ffc2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    email: "nature@example.com",
+    socials: {
+      twitter: "@NaturePhotographer",
+      instagram: "@nature_photo",
+      website: "https://nature.com",
+    },
+    nftsCreated: [],
+    nftsOwned: [],
+    collectionsCreated: [],
+    totalVolume: 75,
+    isVerified: true,
+    createdAt: new Date(),
+  },
+  {
+    id: "4",
+    address: "0x9965507D1a55bcC2695C58ba16FB37610f09aDb1",
+    username: "MusicComposer",
+    bio: "Composing original music tracks for the world.",
+    profileImage:
+      "https://images.unsplash.com/photo-1508700942705-0c74999ca8ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    coverImage:
+      "https://images.unsplash.com/photo-1508700942705-0c74999ca8ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    email: "music@example.com",
+    socials: {
+      twitter: "@MusicComposer",
+      instagram: "@music_tracks",
+      website: "https://music.com",
+    },
+    nftsCreated: [],
+    nftsOwned: [],
+    collectionsCreated: [],
+    totalVolume: 25,
+    isVerified: false,
+    createdAt: new Date(),
+  },
+  {
+    id: "5",
+    address: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    username: "VideoAnimator",
+    bio: "Creating animated video clips for your entertainment.",
+    profileImage:
+      "https://images.unsplash.com/photo-1534452203419-466ef4aef88a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    coverImage:
+      "https://images.unsplash.com/photo-1534452203419-466ef4aef88a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    email: "video@example.com",
+    socials: {
+      twitter: "@VideoAnimator",
+      instagram: "@video_clips",
+      website: "https://video.com",
+    },
+    nftsCreated: [],
+    nftsOwned: [],
+    collectionsCreated: [],
+    totalVolume: 150,
+    isVerified: true,
+    createdAt: new Date(),
+  },
+];
 
-export const generateMockTransactions = (count: number, nftIds: string[]): Transaction[] => {
-  const types: Array<'mint' | 'buy' | 'sell' | 'transfer' | 'list' | 'unlist'> = [
-    'mint', 'buy', 'sell', 'transfer', 'list', 'unlist'
-  ];
-  
-  return Array.from({ length: count }, (_, i) => {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const nftId = nftIds[Math.floor(Math.random() * nftIds.length)];
+export const uploadToIPFS = async (file: File, metadata: any) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append(
+      "pinataMetadata",
+      JSON.stringify({
+        name: metadata.name,
+        keyvalues: metadata,
+      })
+    );
+    formData.append(
+      "pinataOptions",
+      JSON.stringify({
+        cidVersion: 0,
+      })
+    );
+
+    const pinataJWT = import.meta.env.VITE_PINATA_JWT;
     
-    return {
-      id: `tx-${i+1}`,
-      type,
-      nftId,
-      from: `0x${Math.random().toString(16).slice(2, 42)}`,
-      to: `0x${Math.random().toString(16).slice(2, 42)}`,
-      price: ['buy', 'sell', 'list'].includes(type) ? parseFloat((Math.random() * 10 + 0.1).toFixed(2)) : undefined,
-      currency: ['buy', 'sell', 'list'].includes(type) ? 'USDC' : undefined,
-      timestamp: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-      txHash: `0x${Math.random().toString(16).slice(2, 66)}`
-    };
-  });
+    const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${pinataJWT}`,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(`Pinata API error: ${errorData.error}`);
+    }
+
+    const ipfsData = await res.json();
+    console.log("IPFS response:", ipfsData);
+    
+    return ipfsData;
+  } catch (error) {
+    console.error("Error uploading to IPFS:", error);
+    throw error;
+  }
 };
 
-// Mock upload to IPFS
-export const uploadToIPFS = async (
-  metadata: any,
-  file: File
-): Promise<{ ipfsHash: string; url: string }> => {
-  // Simulate upload delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // In a real app, this would upload to Pinata or other IPFS provider
-  return {
-    ipfsHash: `ipfs-${Math.random().toString(16).slice(2, 42)}`,
-    url: URL.createObjectURL(file) // This is just for demo purposes
-  };
+// Store NFT data in MongoDB after successful IPFS upload and blockchain minting
+export const storeNFTInDatabase = async (
+  nftData: Partial<NFT>, 
+  txHash?: string
+) => {
+  try {
+    // Send NFT data to backend API
+    const response = await nftAPI.createNFT({
+      ...nftData,
+      txHash
+    });
+    
+    console.log("NFT stored in database:", response);
+    return response.data;
+  } catch (error) {
+    console.error("Error storing NFT in database:", error);
+    throw error;
+  }
 };
 
-// Mock fetch from IPFS
-export const fetchFromIPFS = async (
-  ipfsHash: string
-): Promise<any> => {
-  // Simulate fetch delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // In a real app, this would fetch from Pinata or other IPFS provider
-  return {
-    data: "Mock IPFS data for hash: " + ipfsHash
-  };
+// Retrieve NFT from database by token ID
+export const getNFTFromDatabase = async (tokenId: number) => {
+  try {
+    const response = await nftAPI.getNFTByTokenId(tokenId);
+    return response.data;
+  } catch (error) {
+    console.error("Error retrieving NFT from database:", error);
+    throw error;
+  }
 };
