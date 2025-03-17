@@ -12,7 +12,6 @@ import { Switch } from "@/components/ui/switch";
 import { useWeb3 } from "@/context/Web3Context";
 import { toast } from "sonner";
 import { checkSufficientSFuel } from "@/utils/web3";
-import { uploadToIPFS } from "@/utils/ipfs";
 import { motion } from "framer-motion";
 import { UploadCloud, Image, AlertTriangle } from "lucide-react";
 import { NFTAttribute } from "@/types";
@@ -96,10 +95,6 @@ export default function Mint() {
       setMintingStep(1);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate upload delay
       
-      // In a real implementation, you would upload the image to IPFS here
-      // For now, we'll use a mock IPFS hash
-      // const mockIpfsHash = "QmXExS4BMc1YrH6iWERyryFJHfFpZkJw9g2TgXSz9BZAhB";
-      
       const metadata = {
         description,
         price: parseFloat(price).toString(),
@@ -118,7 +113,7 @@ export default function Mint() {
       const formData = new FormData();
       formData.append("file", imageFile);
       formData.append("pinataMetadata", JSON.stringify({
-        name: title, // Add the name field here
+        name: title,
         keyvalues: metadata
       }));
       formData.append("pinataOptions", options);  
@@ -142,7 +137,7 @@ export default function Mint() {
       }
 
       const resData = await res.json();
-      console.log("ttt",resData);
+      console.log("Pinata upload response:", resData);
 
       setMintingStep(2);
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate metadata upload delay
@@ -160,18 +155,6 @@ export default function Mint() {
       if (result) {
         toast.success("NFT minted successfully!");
       
-        // Store NFT in local storage
-        const mintedNFTs = JSON.parse(localStorage.getItem("mintedNFTs") || "[]");
-        const newNFT = {
-          title,
-          description,
-          imageUrl: `https://gateway.pinata.cloud/ipfs/${resData.IpfsHash}`,
-          price,
-          owner: account, // Store wallet address
-        };
-      
-        localStorage.setItem("mintedNFTs", JSON.stringify([...mintedNFTs, newNFT]));
-      
         // Reset form
         setTitle("");
         setDescription("");
@@ -179,8 +162,6 @@ export default function Mint() {
         setImageFile(null);
         setImagePreview(null);
       }
-      
-      
     } catch (error) {
       console.error("Error minting NFT:", error);
       toast.error("Failed to mint NFT. Please try again.");

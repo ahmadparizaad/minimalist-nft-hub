@@ -4,6 +4,7 @@ import { Web3State } from '@/types';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { contractAddress, abi } from './secret_final';
+import { nftAPI } from '@/api/apiService';
 
 // Initial state
 const initialState: Web3State = {
@@ -605,10 +606,10 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       console.log("IPFS Hash:", ipfsHash);
       console.log("Formatted Price:", formattedPrice);
       console.log("Royalty Fee:", royaltyFee);
-            console.log("Formatted Royalty Fee:", formattedRoyaltyFee);
+      console.log("Formatted Royalty Fee:", formattedRoyaltyFee);
       console.log("Type of formatted Royalty Fee:", typeof(formattedRoyaltyFee));
-
       console.log("Payment Token:", paymentToken);
+      
       const tx = await contractWithSigner.createToken(ipfsHash, formattedPrice, formattedRoyaltyFee, paymentToken);
       console.log("Transaction hash:", tx.hash);
       toast.success("Transaction submitted. Waiting for confirmation...");
@@ -628,27 +629,33 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const nftDetails = await contract.getNFTDetails(tokenId);
       
       const newNft = {
-        id: tokenId,
-        tokenId: tokenId,
-        creator: nftDetails.creator,
-        owner: nftDetails.owner,
-        price: parseFloat(ethers.utils.formatUnits(nftDetails.price, 6)),
-        // image: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
-        // metadataURI: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
-        royaltyFee: royaltyFee,
+        tokenId: Number(tokenId),
         title: title,
         description: description,
-        currency: 'USDC',
+        image: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
+        price: parseFloat(ethers.utils.formatUnits(nftDetails.price, 6)),
+        owner: nftDetails.owner,
+        creator: nftDetails.owner, // Creator is the current owner when minting
+        royaltyFee: parseFloat(royaltyFee),
+        isListed: true,
         category: "Art",
         rarity: "Common",
         tokenStandard: "ERC-721",
-        isListed: true,
-        createdAt: new Date().toISOString(),
-        attributes: [
-          { trait_type: "Level", value: Number(tokenId) },
-          { trait_type: "Background", value: "Blue" }
-        ]
+        ipfsHash: ipfsHash,
+        metadataURI: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
+        txHash: tx.hash
       };
+      
+      // Save NFT to database
+      try {
+        console.log("Saving NFT to database:", newNft);
+        const dbResponse = await nftAPI.createNFT(newNft);
+        console.log("NFT saved to database:", dbResponse);
+      } catch (dbError) {
+        console.error("Error saving NFT to database:", dbError);
+        // We don't throw here to allow the NFT creation to succeed even if DB save fails
+        toast.error("NFT minted successfully but failed to save details to database");
+      }
       
       toast.success("NFT minted successfully!");
       
@@ -850,3 +857,4 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
 
 // Custom hook to use the Web3 context
 export const useWeb3 = () => useContext(Web3Context);
+
