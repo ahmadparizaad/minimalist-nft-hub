@@ -11,18 +11,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Clock, ArrowRight, Tag, Repeat, Shield, Info, ExternalLink, Share2 } from "lucide-react";
+import { Clock, ArrowRight, Tag, Repeat, Shield, Info, ExternalLink, Share2, User } from "lucide-react";
 import { contractAddress } from "@/context/secret_final";
+import { nftAPI, userAPI } from "@/api/apiService";
 
 export default function NFTDetail() {
   const { id } = useParams<{ id: string }>();
-  const { web3State, connectWallet, requestSFuel, getNFTDetails, buyNFT, getTransactionHistory } = useWeb3();
+  const { web3State, connectWallet, requestSFuel, getTransactionHistory, buyNFT: buyNFTOnChain } = useWeb3();
   const { isConnected, account, sFuelBalance, usdcBalance } = web3State;
   
   const [nft, setNft] = useState<NFT | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   
   useEffect(() => {
     const fetchNFTData = async () => {
@@ -30,33 +32,36 @@ export default function NFTDetail() {
       try {
         if (!id) return;
         
-        const tokenId = parseInt(id);
-        const nftDetails = await getNFTDetails(tokenId) as NFT;
+        const response = await nftAPI.getNFTById(id);
+        const nftDetails = response.data;
         
         if (nftDetails) {
           setNft(nftDetails);
           
-          const txHistory = await getTransactionHistory(tokenId);
-          console.log("txHistory", txHistory);
+          setIsOwner(isConnected && account?.toLowerCase() === nftDetails.owner?.toLowerCase());
           
-          const formattedTxs: Transaction[] = txHistory.map((tx: string, index: number) => {
-            const parts = tx.split(':');
-            const txType = parts[0] as 'mint' | 'buy' | 'sell' | 'transfer' | 'list' | 'unlist';
+          if (nftDetails.tokenId) {
+            const txHistory = await getTransactionHistory(nftDetails.tokenId);
             
-            return {
-              id: `tx-${index}`,
-              type: txType,
-              nftId: id,
-              from: parts[1] || '',
-              to: parts[2] || '',
-              price: parseFloat(parts[3] || '0'),
-              currency: 'USDC',
-              timestamp: parts[4] || new Date().toISOString(),
-              txHash: `0x${Math.random().toString(16).slice(2, 66)}`
-            };
-          });
-          
-          setTransactions(formattedTxs);
+            const formattedTxs: Transaction[] = txHistory.map((tx: string, index: number) => {
+              const parts = tx.split(':');
+              const txType = parts[0] as 'mint' | 'buy' | 'sell' | 'transfer' | 'list' | 'unlist';
+              
+              return {
+                id: `tx-${index}`,
+                type: txType,
+                nftId: id,
+                from: parts[1] || '',
+                to: parts[2] || '',
+                price: parseFloat(parts[3] || '0'),
+                currency: 'USDC',
+                timestamp: parts[4] || new Date().toISOString(),
+                txHash: `0x${Math.random().toString(16).slice(2, 66)}`
+              };
+            });
+            
+            setTransactions(formattedTxs);
+          }
         }
       } catch (error) {
         console.error("Error fetching NFT data:", error);
@@ -69,7 +74,7 @@ export default function NFTDetail() {
     if (id) {
       fetchNFTData();
     }
-  }, [id, getNFTDetails, getTransactionHistory]);
+  }, [id, getTransactionHistory, account, isConnected]);
 
   const handlePurchase = async () => {
     if (!isConnected) {
@@ -79,7 +84,7 @@ export default function NFTDetail() {
     
     if (!nft) return;
     
-    if (nft.owner === account) {
+    if (isOwner) {
       toast.error("You already own this NFT");
       return;
     }
@@ -106,10 +111,15 @@ export default function NFTDetail() {
     setIsPurchasing(true);
     
     try {
-      await buyNFT(parseInt(nft.id.toString()));
+      await buyNFTOnChain(parseInt(nft.tokenId.toString()));
       
-      const updatedNft = await getNFTDetails(parseInt(nft.id.toString()));
-      setNft(updatedNft as NFT);
+      await nftAPI.buyNFT(nft.tokenId, account || "", "");
+      
+      const updatedNftResponse = await nftAPI.getNFTById(id || "");
+      setNft(updatedNftResponse.data);
+      setIsOwner(true);
+      
+      toast.success("NFT purchased successfully!");
       
       const newTransaction: Transaction = {
         id: `tx-${Date.now()}`,
@@ -126,8 +136,49 @@ export default function NFTDetail() {
       setTransactions([newTransaction, ...transactions]);
     } catch (error) {
       console.error("Error purchasing NFT:", error);
+      toast.error("Failed to purchase NFT");
     } finally {
       setIsPurchasing(false);
+    }
+  };
+
+  const setAsProfileImage = async () => {
+    if (!nft || !isOwner || !account) return;
+    
+    try {
+      toast.loading("Setting as profile image...");
+      
+      await userAPI.updateUser(account, {
+        address: account,
+        profileImage: nft.image
+      });
+      
+      toast.dismiss();
+      toast.success("Profile image updated successfully");
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+      toast.dismiss();
+      toast.error("Failed to update profile image");
+    }
+  };
+
+  const setAsBannerImage = async () => {
+    if (!nft || !isOwner || !account) return;
+    
+    try {
+      toast.loading("Setting as banner image...");
+      
+      await userAPI.updateUser(account, {
+        address: account,
+        coverImage: nft.image
+      });
+      
+      toast.dismiss();
+      toast.success("Banner image updated successfully");
+    } catch (error) {
+      console.error("Error updating banner image:", error);
+      toast.dismiss();
+      toast.error("Failed to update banner image");
     }
   };
 
@@ -248,6 +299,27 @@ export default function NFTDetail() {
               
               <p className="text-muted-foreground mb-8">{nft.description}</p>
               
+              {isOwner && (
+                <div className="mb-8 flex gap-3">
+                  <Button 
+                    onClick={setAsProfileImage} 
+                    variant="outline" 
+                    className="flex gap-2"
+                  >
+                    <User className="h-4 w-4" />
+                    Set as Profile Image
+                  </Button>
+                  <Button 
+                    onClick={setAsBannerImage} 
+                    variant="outline" 
+                    className="flex gap-2"
+                  >
+                    <Image className="h-4 w-4" />
+                    Set as Banner
+                  </Button>
+                </div>
+              )}
+              
               {nft.isListed && (
                 <Card className="mb-8">
                   <CardContent className="p-6">
@@ -256,14 +328,14 @@ export default function NFTDetail() {
                         <p className="text-sm text-muted-foreground">Current Price</p>
                         <p className="text-2xl font-display font-bold">{formatPrice(nft.price, nft.currency)}</p>
                       </div>
-                      {account === nft.owner ? (
+                      {isOwner ? (
                         <Button variant="outline" className="border-red-500 text-red-500 hover:bg-red-500/10">
                           Unlist
                         </Button>
                       ) : (
                         <Button
                           onClick={handlePurchase}
-                          disabled={isPurchasing || !isConnected || account === nft.owner}
+                          disabled={isPurchasing || !isConnected || isOwner}
                           className="bg-primary hover:bg-primary/90 text-white"
                         >
                           {isPurchasing ? (

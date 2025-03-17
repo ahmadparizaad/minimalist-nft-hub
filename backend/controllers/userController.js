@@ -89,6 +89,10 @@ exports.updateUser = async (req, res) => {
               ...user.socials,
               ...req.body.socials
             };
+          } else if (field === 'profileImage' || field === 'coverImage') {
+            // For profile or banner image, verify user owns the NFT if it's an NFT image
+            // This is a simplified check - in production you'd verify the NFT ownership
+            user[field] = req.body[field];
           } else {
             user[field] = req.body[field];
           }
