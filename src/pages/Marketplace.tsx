@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -426,4 +427,26 @@ export default function Marketplace() {
                     ))}
                   </div>
                 ) : (
-                 
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <Search className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium mb-2">No NFTs Found</h3>
+                    <p className="text-muted-foreground max-w-md mb-6">
+                      No NFTs match your current filter criteria. Try adjusting your filters or search query.
+                    </p>
+                    <Button onClick={handleClearFilters} variant="outline">
+                      Clear All Filters
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
