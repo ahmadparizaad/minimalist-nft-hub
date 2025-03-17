@@ -35,7 +35,7 @@ export function Navbar() {
         <div className="flex items-center">
           <Link to="/" className="text-xl font-display font-bold">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
-              Ethereal
+              NapFT
             </span>
           </Link>
         </div>
