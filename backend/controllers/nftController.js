@@ -358,6 +358,16 @@ exports.buyNFT = async (req, res) => {
       });
     }
     
+    // Prevent buying your own NFT
+    if (nft.owner.toLowerCase() === buyer.toLowerCase()) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot buy your own NFT'
+      });
+    }
+    
     const oldOwner = nft.owner;
     
     // Create buy transaction
@@ -397,7 +407,9 @@ exports.buyNFT = async (req, res) => {
         nftsOwned: [nft._id]
       }], { session });
     } else {
-      buyerUser.nftsOwned.push(nft._id);
+      if (!buyerUser.nftsOwned.includes(nft._id)) {
+        buyerUser.nftsOwned.push(nft._id);
+      }
       await buyerUser.save({ session });
     }
     

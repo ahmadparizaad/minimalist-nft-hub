@@ -1,27 +1,27 @@
+
 import { NFT } from "@/types";
 import { Link } from "react-router-dom";
 import { formatPrice } from "@/utils/web3";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { nftAPI } from "@/api/apiService";
 
 interface NFTCardProps {
   nft: NFT;
   index?: number;
 }
 
-const API_URL = "http://localhost:5000/api";
-
 export function NFTCard({ nft, index = 0 }: NFTCardProps) {
   const [nftData, setNftData] = useState<NFT>(nft);
   
   useEffect(() => {
-    if (nft.tokenId) {
+    if (nft.id) {
       const fetchNFTData = async () => {
         try {
-          const response = await axios.get(`${API_URL}/nfts/token/${nft.tokenId}`);
-          if (response.data.success) {
-            setNftData(response.data.data);
+          // Fetch the latest NFT data from backend
+          const response = await nftAPI.getNFTById(nft.id);
+          if (response.data) {
+            setNftData(response.data);
           }
         } catch (error) {
           console.error("Error fetching NFT data:", error);
@@ -30,7 +30,7 @@ export function NFTCard({ nft, index = 0 }: NFTCardProps) {
       
       fetchNFTData();
     }
-  }, [nft.tokenId]);
+  }, [nft.id]);
   
   return (
     <motion.div
