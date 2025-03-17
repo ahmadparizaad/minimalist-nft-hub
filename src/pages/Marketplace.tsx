@@ -61,9 +61,9 @@ export default function Marketplace() {
         setNfts(fetchedNFTs);
         setFilteredNfts(fetchedNFTs);
         
-        // Extract available categories and rarities
-        const categories = [...new Set(fetchedNFTs.map((nft: NFT) => nft.category))];
-        const rarities = [...new Set(fetchedNFTs.map((nft: NFT) => nft.rarity))];
+        // Extract available categories and rarities - add explicit type casting
+        const categories = [...new Set(fetchedNFTs.map((nft: NFT) => nft.category))] as string[];
+        const rarities = [...new Set(fetchedNFTs.map((nft: NFT) => nft.rarity))] as string[];
         
         setAvailableCategories(categories);
         setAvailableRarities(rarities);

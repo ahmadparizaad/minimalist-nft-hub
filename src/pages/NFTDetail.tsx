@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Clock, ArrowRight, Tag, Repeat, Shield, Info, ExternalLink, Share2, User } from "lucide-react";
+import { Clock, ArrowRight, Tag, Repeat, Shield, Info, ExternalLink, Share2, User, Image } from "lucide-react";
 import { contractAddress } from "@/context/secret_final";
 import { nftAPI, userAPI } from "@/api/apiService";
 
