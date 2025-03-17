@@ -1,3 +1,4 @@
+
 export interface NFT {
   id: string;
   tokenId: number;
@@ -18,6 +19,9 @@ export interface NFT {
   royaltyFee: number;
   ipfsHash: string;
   collectionId?: string;
+  txHash?: string;
+  utilityPercent?: number;
+  transactionHistory?: any[];
 }
 
 export interface NFTAttribute {
@@ -31,12 +35,19 @@ export interface Collection {
   description: string;
   image: string;
   banner: string;
+  bannerImage?: string; // Adding for backward compatibility
   creator: string;
   verified: boolean;
   items: number;
   owners: number;
   floorPrice: number;
   volumeTraded: number;
+  category?: string;
+  nfts?: any[];
+  totalVolume?: number;
+  royaltyFee?: number;
+  isVerified?: boolean;
+  createdAt?: string;
 }
 
 export interface Creator {
@@ -49,6 +60,21 @@ export interface Creator {
   volumeTraded: number;
   followers: number;
   following: number;
+  username?: string; // Adding for backward compatibility
+  profileImage?: string; // Adding for backward compatibility
+  coverImage?: string; // Adding for backward compatibility
+  email?: string;
+  socials?: {
+    twitter?: string;
+    instagram?: string;
+    website?: string;
+  };
+  nftsCreated?: any[];
+  nftsOwned?: any[];
+  collectionsCreated?: any[];
+  totalVolume?: number;
+  isVerified?: boolean;
+  createdAt?: string;
 }
 
 export interface MarketplaceFilters {
@@ -90,8 +116,4 @@ export interface Web3State {
   error: string | null;
 }
 
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
+// Note: The Window interface is defined in vite-env.d.ts, not here

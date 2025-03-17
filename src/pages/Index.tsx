@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { FeaturedNFT } from "@/components/FeaturedNFT";
 import { NFTCard } from "@/components/NFTCard";
 import { CollectionCard } from "@/components/CollectionCard";
-import { generateMockNFTs, generateMockCollections } from "@/utils/ipfs";
+import { mockNFTs, mockCollections, generateMockNFTs, generateMockCollections } from "@/utils/ipfs";
 import { NFT, Collection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";

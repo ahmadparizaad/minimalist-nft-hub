@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -8,30 +9,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatAddress } from "@/utils/web3";
 import { useWeb3 } from "@/context/Web3Context";
 import { NFT, Transaction, Creator } from "@/types";
-import { generateMockNFTs, generateMockTransactions, generateMockCreators } from "@/utils/ipfs";
+import { 
+  mockNFTs, 
+  mockCreators, 
+  mockTransactions, 
+  generateMockNFTs, 
+  generateMockTransactions, 
+  generateMockCreators 
+} from "@/utils/ipfs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Copy, ExternalLink, Edit, CheckCircle2, Share2 } from "lucide-react";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
-  const { web3State, getAllNFTs,getMyNFTs } = useWeb3();
+  const { web3State, getAllNFTs, getMyNFTs } = useWeb3();
   const { account } = web3State;
-  const [nfts, setNfts] = useState([]);
+  const [nfts, setNfts] = useState<NFT[]>([]);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [ownedNFTs, setOwnedNFTs] = useState<NFT[]>([]);
   const [createdNFTs, setCreatedNFTs] = useState<NFT[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("owned");
+  const [allNfts, setAllNfts] = useState<NFT[]>([]); // All NFTs
+  const [profileNfts, setProfileNfts] = useState<NFT[]>([]); // Profile-specific NFTs
 
   const isOwner = address === account || !address;
   const profileAddress = address || account;
-  console.log("Address Prop:", address);
-  console.log("Address Prop2:", account);
-console.log("Account:", account);
-console.log("Final Profile Address:", profileAddress);
-
+  
   useEffect(() => {
     console.log("Profile Address:", profileAddress);
   }, [profileAddress]);
@@ -41,28 +47,47 @@ console.log("Final Profile Address:", profileAddress);
     setNfts(storedNFTs);
   }, []);
   
-
   useEffect(() => {
     const fetchProfileData = async () => {
       setIsLoading(true);
       try {
-        const allNFTs = await getAllNFTs();
-        console.log("Fetched NFTs in profile:", allNFTs);
-        setAllNfts(allNFTs); // Store ALL NFTs in a separate state
-
-        {allNFTs.length > 0 ? (
-          allNFTs.map(nft => (
-              <div key={nft.id} className="nft-card">
-                  <img src={nft.image} alt={nft.title} />
-                  <h3>{nft.title}</h3>
-                  <p>{nft.description}</p>
-              </div>
-          ))
-      ) : (
-          <p>No NFTs owned.</p>
-      )}
-      
-
+        // First try to get NFTs from the blockchain/API
+        let fetchedNFTs: NFT[] = [];
+        try {
+          const result = await getAllNFTs();
+          if (Array.isArray(result) && result.length > 0) {
+            fetchedNFTs = result as NFT[];
+          }
+        } catch (error) {
+          console.error("Error fetching NFTs from blockchain:", error);
+          // Fallback to mock data if API call fails
+          fetchedNFTs = generateMockNFTs(5);
+        }
+        
+        setAllNfts(fetchedNFTs);
+        
+        // Set creator data
+        const mockCreatorData = generateMockCreators(5).find(
+          c => c.address.toLowerCase() === profileAddress?.toLowerCase()
+        );
+        setCreator(mockCreatorData || null);
+        
+        // Set owned and created NFTs
+        if (profileAddress) {
+          const owned = fetchedNFTs.filter(
+            nft => nft.owner.toLowerCase() === profileAddress.toLowerCase()
+          );
+          setOwnedNFTs(owned);
+          
+          const created = fetchedNFTs.filter(
+            nft => nft.creator.toLowerCase() === profileAddress.toLowerCase()
+          );
+          setCreatedNFTs(created);
+        }
+        
+        // Set transactions
+        setTransactions(generateMockTransactions());
+        
       } catch (error) {
         console.error("Error fetching profile data:", error);
         toast.error("Failed to load profile data");
@@ -75,13 +100,7 @@ console.log("Final Profile Address:", profileAddress);
       console.log("Fetching NFTs for:", profileAddress);
       fetchProfileData();
     }
-  }, [profileAddress]);
-  
-  // In your component's state:
-  const [allNfts, setAllNfts] = useState<any[]>([]); // All NFTs
-  const [profileNfts, setProfileNfts] = useState<any[]>([]); // Profile-specific NFTs
-  
-
+  }, [profileAddress, getAllNFTs]);
 
   const handleCopyAddress = () => {
     if (profileAddress) {
@@ -133,6 +152,7 @@ console.log("Final Profile Address:", profileAddress);
       </div>
     );
   }
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -282,7 +302,6 @@ console.log("Final Profile Address:", profileAddress);
                 </p>
               )}
             </TabsContent>
-
 
             <TabsContent value="created" className="mt-6">
               {createdNFTs.length > 0 ? (
