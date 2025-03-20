@@ -215,7 +215,7 @@ exports.createNFT = async (req, res) => {
       type: 'mint',
       nftId: nft._id,
       tokenId,
-      from: '0x0000000000000000000000000000000000000000', // Mint address
+      from: '0xC202B26262b4a3110d3Df2617325c41DfB62933e', // Mint address
       to: creator,
       price: 0,
       currency: 'USDC',

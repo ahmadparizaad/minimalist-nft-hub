@@ -23,7 +23,7 @@ export default function Mint() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("0.1");
-  const [royaltyFee, setRoyaltyFee] = useState(2.5); // 2.5%
+  const [royaltyFee, setRoyaltyFee] = useState(5); // 2.5%
   const [category, setCategory] = useState("Art");
   const [rarity, setRarity] = useState("Common");
   const [isListed, setIsListed] = useState(true);

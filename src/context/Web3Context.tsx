@@ -592,9 +592,14 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         return null;
       }
       
-      const formattedPrice = ethers.utils.parseUnits(price.toString(), tokenDecimals);
-      const formattedRoyaltyFee = ethers.utils.parseUnits(royaltyFee.toString(), tokenDecimals);
-      
+      const formattedPrice = ethers.utils.parseUnits(parseFloat(price).toFixed(6), tokenDecimals);
+      const formattedRoyaltyFee = Number(royaltyFee);
+      if (isNaN(formattedRoyaltyFee) || formattedRoyaltyFee < 0 || formattedRoyaltyFee > 255) {
+        console.error("Invalid royalty fee:", royaltyFee);
+        toast.error("Royalty fee must be between 0 and 255");
+        return null;
+      }
+               
       // Check if sFuel is needed
       if (web3State.sFuelBalance <= 0.001) {
         console.log("Requesting sFuel...");
@@ -640,7 +645,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         isListed: true,
         category: "Art",
         rarity: "Common",
-        tokenStandard: "ERC-721" as "ERC-721",
+        tokenStandard: "ERC-721" as const,
         ipfsHash: ipfsHash,
         metadataURI: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
         txHash: tx.hash

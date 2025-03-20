@@ -15,7 +15,7 @@ const api = axios.create({
 
 // NFT API
 export const nftAPI = {
-  getAllNFTs: async (params?: any) => {
+  getAllNFTs: async (params?: unknown) => {
     const response = await api.get("/nfts", { params });
     return response.data;
   },
@@ -68,7 +68,7 @@ export const userAPI = {
     return response.data;
   },
   
-  updateUser: async (address: string, userData: any) => {
+  updateUser: async (address: string, userData: unknown) => {
     const response = await api.put(`/users/${address}`, userData);
     return response.data;
   },
@@ -86,7 +86,7 @@ export const userAPI = {
 
 // Collection API
 export const collectionAPI = {
-  getAllCollections: async (params?: any) => {
+  getAllCollections: async (params?: unknown) => {
     const response = await api.get("/collections", { params });
     return response.data;
   },
@@ -123,7 +123,7 @@ export const collectionAPI = {
 
 // Transaction API
 export const transactionAPI = {
-  getAllTransactions: async (params?: any) => {
+  getAllTransactions: async (params?: unknown) => {
     const response = await api.get("/transactions", { params });
     return response.data;
   },

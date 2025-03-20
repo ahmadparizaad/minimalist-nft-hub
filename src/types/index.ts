@@ -12,7 +12,7 @@ export interface NFT {
   description: string;
   category: string;
   rarity: string;
-  tokenStandard: "ERC-721" | "ERC-1155";
+  tokenStandard: string;
   isListed: boolean;
   createdAt: string;
   attributes: NFTAttribute[];
@@ -21,7 +21,7 @@ export interface NFT {
   collectionId?: string;
   txHash?: string;
   utilityPercent?: number;
-  transactionHistory?: any[];
+  transactionHistory?: unknown[];
 }
 
 export interface NFTAttribute {
@@ -43,7 +43,7 @@ export interface Collection {
   floorPrice: number;
   volumeTraded: number;
   category?: string;
-  nfts?: any[];
+  nfts?: unknown[];
   totalVolume?: number;
   royaltyFee?: number;
   isVerified?: boolean;
@@ -69,9 +69,9 @@ export interface Creator {
     instagram?: string;
     website?: string;
   };
-  nftsCreated?: any[];
-  nftsOwned?: any[];
-  collectionsCreated?: any[];
+  nftsCreated?: unknown[];
+  nftsOwned?: unknown[];
+  collectionsCreated?: unknown[];
   totalVolume?: number;
   isVerified?: boolean;
   createdAt?: string;
