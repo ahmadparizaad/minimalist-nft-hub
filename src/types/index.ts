@@ -1,6 +1,6 @@
 
 export interface NFT {
-  id: string;
+  _id: string;
   tokenId: number;
   creator: string;
   owner: string;

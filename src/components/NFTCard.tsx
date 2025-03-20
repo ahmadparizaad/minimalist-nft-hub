@@ -18,13 +18,15 @@ export function NFTCard({ nft, index = 0 }: NFTCardProps) {
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    if (nft.id) {
+    if (nft._id) {
+      console.log(nft._id);
       const fetchNFTData = async () => {
         setIsLoading(true);
         setError(null);
         try {
           // Fetch the latest NFT data from backend
-          const response = await nftAPI.getNFTById(nft.id);
+          const response = await nftAPI.getNFTById(nft._id);
+          console.log(response.data);
           if (response.success && response.data) {
             setNftData(response.data);
           }
@@ -38,7 +40,7 @@ export function NFTCard({ nft, index = 0 }: NFTCardProps) {
       
       fetchNFTData();
     }
-  }, [nft.id]);
+  }, [nft._id]);
   
   if (isLoading) {
     return (
@@ -86,7 +88,7 @@ export function NFTCard({ nft, index = 0 }: NFTCardProps) {
       }}
     >
       <Link
-        to={`/nft/${nftData.id}`}
+        to={`/nft/${nftData._id}`}
         className="group block overflow-hidden"
       >
         <div className="nft-card flex flex-col h-full border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-colors">

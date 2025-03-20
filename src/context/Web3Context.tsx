@@ -489,7 +489,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         throw new Error("Contract is not initialized");
       }
       
-      const transactions = await contract.GetTransactionHistory(tokenId);
+      const nftDetails = await contract.getNFTDetails(tokenId);
+      const transactions = nftDetails.transactionHistory
       console.log("Transaction history for NFT #", tokenId, ":", transactions);
       return transactions;
     } catch (error: unknown) {
@@ -599,7 +600,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         toast.error("Royalty fee must be between 0 and 255");
         return null;
       }
-               
+
       // Check if sFuel is needed
       if (web3State.sFuelBalance <= 0.001) {
         console.log("Requesting sFuel...");

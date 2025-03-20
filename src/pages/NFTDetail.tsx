@@ -41,21 +41,20 @@ export default function NFTDetail() {
           setIsOwner(isConnected && account?.toLowerCase() === nftDetails.owner?.toLowerCase());
           
           if (nftDetails.tokenId) {
-            const txHistory = await getTransactionHistory(nftDetails.tokenId);
+            console.log(nftDetails.tokenId)
+            const txHistory = await nftAPI.getTransactionHistory(nftDetails.tokenId);
+            console.log(txHistory)
             
-            const formattedTxs: Transaction[] = txHistory.map((tx: string, index: number) => {
-              const parts = tx.split(':');
-              const txType = parts[0] as 'mint' | 'buy' | 'sell' | 'transfer' | 'list' | 'unlist';
-              
+            const formattedTxs: Transaction[] = txHistory.data.map((tx: { type: string; from: string; to: string; price: string; timestamp: string }, index: number) => {
               return {
                 id: `tx-${index}`,
-                type: txType,
+                type: tx.type,
                 nftId: id,
-                from: parts[1] || '',
-                to: parts[2] || '',
-                price: parseFloat(parts[3] || '0'),
+                from: tx.from || '',
+                to: tx.to || '',
+                price: parseFloat(tx.price || '0'),
                 currency: 'USDC',
-                timestamp: parts[4] || new Date().toISOString(),
+                timestamp: tx.timestamp || new Date().toISOString(),
                 txHash: `0x${Math.random().toString(16).slice(2, 66)}`
               };
             });
@@ -124,7 +123,7 @@ export default function NFTDetail() {
       const newTransaction: Transaction = {
         id: `tx-${Date.now()}`,
         type: 'buy',
-        nftId: nft.id,
+        nftId: nft._id,
         from: nft.owner,
         to: account ?? "",
         price: nft.price,

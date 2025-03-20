@@ -48,6 +48,7 @@ export default function Marketplace() {
       try {
         // Fetch NFTs from backend API instead of blockchain
         const response = await nftAPI.getAllNFTs();
+        console.log(response.data)
         const fetchedNFTs = response.data || [];
   
         if (!fetchedNFTs.length) {
@@ -423,7 +424,7 @@ export default function Marketplace() {
                 ) : filteredNfts.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredNfts.map((nft, index) => (
-                      <NFTCard key={nft.id} nft={nft} index={index} />
+                      <NFTCard key={nft._id} nft={nft} index={index} />
                     ))}
                   </div>
                 ) : (

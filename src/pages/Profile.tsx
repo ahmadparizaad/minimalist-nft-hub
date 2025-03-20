@@ -83,6 +83,7 @@ export default function Profile() {
             nft => nft.creator.toLowerCase() === profileAddress.toLowerCase()
           );
           setCreatedNFTs(created);
+          console.log(created);
         }
         
         // Set transactions
@@ -293,7 +294,7 @@ export default function Profile() {
               {allNfts.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {allNfts.map((nft) => (
-                    <NFTCard key={nft.id} nft={nft} />
+                    <NFTCard key={nft._id} nft={nft} />
                   ))}
                 </div>
               ) : (
@@ -307,7 +308,7 @@ export default function Profile() {
               {createdNFTs.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {createdNFTs.map((nft, index) => (
-                    <NFTCard key={nft.id} nft={nft} index={index} />
+                    <NFTCard key={nft._id} nft={nft} index={index} />
                   ))}
                 </div>
               ) : (
