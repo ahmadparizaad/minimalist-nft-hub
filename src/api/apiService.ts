@@ -1,9 +1,8 @@
-
 import axios from "axios";
 import { NFT, Transaction, Collection, Creator } from "@/types";
 
-// API URL
-const API_URL = "http://localhost:5000/api";
+// API URL - Updated to work in development environment
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Create axios instance
 const api = axios.create({
@@ -16,13 +15,23 @@ const api = axios.create({
 // NFT API
 export const nftAPI = {
   getAllNFTs: async (params?: unknown) => {
-    const response = await api.get("/nfts", { params });
-    return response.data;
+    try {
+      const response = await api.get("/nfts", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching all NFTs:", error);
+      return { data: [], success: false };
+    }
   },
   
   getNFTById: async (id: string) => {
-    const response = await api.get(`/nfts/${id}`);
-    return response.data;
+    try {
+      const response = await api.get(`/nfts/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching NFT with ID ${id}:`, error);
+      return { data: null, success: false };
+    }
   },
   
   getNFTByTokenId: async (tokenId: number) => {
