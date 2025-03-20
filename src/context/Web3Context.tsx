@@ -593,7 +593,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       }
       
       const formattedPrice = ethers.utils.parseUnits(price.toString(), tokenDecimals);
-      const formattedRoyaltyFee = ethers.utils.parseUnits((royaltyFee).toString(), tokenDecimals);
+      const formattedRoyaltyFee = ethers.utils.parseUnits(royaltyFee.toString(), tokenDecimals);
       
       // Check if sFuel is needed
       if (web3State.sFuelBalance <= 0.001) {
@@ -604,9 +604,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const contractWithSigner = contract.connect(signer);
       console.log("Contract with signer:", contractWithSigner);
       console.log("IPFS Hash:", ipfsHash);
-      console.log("Formatted Price:", formattedPrice);
+      console.log("Formatted Price:", formattedPrice.toString());
       console.log("Royalty Fee:", royaltyFee);
-      console.log("Formatted Royalty Fee:", formattedRoyaltyFee);
+      console.log("Formatted Royalty Fee:", formattedRoyaltyFee.toString());
       console.log("Type of formatted Royalty Fee:", typeof(formattedRoyaltyFee));
       console.log("Payment Token:", paymentToken);
       
@@ -640,7 +640,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         isListed: true,
         category: "Art",
         rarity: "Common",
-        tokenStandard: "ERC-721",
+        tokenStandard: "ERC-721" as "ERC-721",
         ipfsHash: ipfsHash,
         metadataURI: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
         txHash: tx.hash
@@ -857,4 +857,3 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
 
 // Custom hook to use the Web3 context
 export const useWeb3 = () => useContext(Web3Context);
-
