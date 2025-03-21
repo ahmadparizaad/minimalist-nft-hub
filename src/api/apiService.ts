@@ -35,8 +35,36 @@ export const nftAPI = {
   },
   
   getNFTByTokenId: async (tokenId: number) => {
-    const response = await api.get(`/nfts/token/${tokenId}`);
-    return response.data;
+    try {
+      console.log(`Fetching NFT with token ID ${tokenId}`);
+      const response = await api.get(`/nfts/token/${tokenId}`);
+      console.log('NFT by token ID response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching NFT with token ID ${tokenId}:`, error);
+      
+      // Provide a fallback NFT with default values
+      return { 
+        success: false, 
+        data: {
+          _id: `fallback-${tokenId}`,
+          tokenId: tokenId,
+          title: `NFT #${tokenId}`,
+          description: "NFT Description (Fallback)",
+          image: "https://via.placeholder.com/500?text=NFT+Image",
+          price: 0,
+          currency: "USDC",
+          owner: "0x0000000000000000000000000000000000000000",
+          creator: "0x0000000000000000000000000000000000000000",
+          royaltyFee: 0,
+          isListed: false,
+          category: "Art",
+          rarity: "Common",
+          tokenStandard: "ERC-721",
+          createdAt: new Date().toISOString()
+        } 
+      };
+    }
   },
   
   createNFT: async (nftData: Partial<NFT>) => {
@@ -45,8 +73,16 @@ export const nftAPI = {
   },
   
   updateNFT: async (tokenId: number, updateData: Partial<NFT>) => {
-    const response = await api.put(`/nfts/${tokenId}`, updateData);
-    return response.data;
+    try {
+      const response = await api.put(`/nfts/${tokenId}`, updateData);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating NFT with tokenId ${tokenId}:`, error);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+      }
+      throw error;
+    }
   },
   
   buyNFT: async (tokenId: number, buyer: string, txHash?: string) => {
@@ -60,13 +96,40 @@ export const nftAPI = {
   },
   
   getNFTsByCreator: async (address: string) => {
-    const response = await api.get(`/nfts/creator/${address}`);
-    return response.data;
+    try {
+      console.log(`Fetching NFTs created by ${address}`);
+      const response = await api.get(`/nfts/creator/${address}`);
+      console.log('Creator NFTs response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching NFTs created by ${address}:`, error);
+      // Check if error has response data
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+      }
+      return { data: [], success: false };
+    }
   },
   
   getTransactionHistory: async (tokenId: number) => {
     const response = await api.get(`/nfts/transactions/${tokenId}`);
     return response.data;
+  },
+  
+  getTrendingNFTs: async (limit = 4) => {
+    try {
+      console.log(`Fetching trending NFTs, limit: ${limit}`);
+      const response = await api.get(`/nfts/trending?limit=${limit}`);
+      console.log('Trending NFTs response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching trending NFTs:", error);
+      // Provide a fallback response if the API call fails
+      return { 
+        success: false, 
+        data: [] 
+      };
+    }
   }
 };
 

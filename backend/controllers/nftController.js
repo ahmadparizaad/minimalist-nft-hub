@@ -1,4 +1,3 @@
-
 const NFT = require('../models/NFT');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
@@ -440,7 +439,14 @@ exports.buyNFT = async (req, res) => {
 exports.getNFTsByOwner = async (req, res) => {
   try {
     const { address } = req.params;
-    const nfts = await NFT.find({ owner: address });
+    console.log('Finding NFTs for owner address:', address);
+    
+    // Use case-insensitive regex to match owner address
+    const nfts = await NFT.find({ 
+      owner: { $regex: new RegExp(`^${address}$`, 'i') } 
+    });
+    
+    console.log(`Found ${nfts.length} NFTs for owner ${address}`);
     
     res.status(200).json({
       success: true,
@@ -460,7 +466,14 @@ exports.getNFTsByOwner = async (req, res) => {
 exports.getNFTsByCreator = async (req, res) => {
   try {
     const { address } = req.params;
-    const nfts = await NFT.find({ creator: address });
+    console.log('Finding NFTs for creator address:', address);
+    
+    // Use case-insensitive regex to match creator address
+    const nfts = await NFT.find({ 
+      creator: { $regex: new RegExp(`^${address}$`, 'i') } 
+    });
+    
+    console.log(`Found ${nfts.length} NFTs for creator ${address}`);
     
     res.status(200).json({
       success: true,
@@ -501,6 +514,67 @@ exports.getTransactionHistoryByTokenId = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch transaction history',
+      error: error.message
+    });
+  }
+};
+
+// Get trending NFTs based on transaction activity and views
+exports.getTrendingNFTs = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 4;
+    
+    console.log(`Finding trending NFTs, limit: ${limit}`);
+    
+    // Get NFTs with recent transactions (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    // Find NFTs with recent transactions
+    const recentTransactions = await Transaction.find({
+      timestamp: { $gte: sevenDaysAgo }
+    })
+    .sort({ timestamp: -1 })
+    .populate('nftId');
+    
+    // Extract unique NFT IDs from transactions
+    const nftIdsFromTransactions = [...new Set(
+      recentTransactions
+        .map(tx => tx.nftId?._id?.toString())
+        .filter(id => id) // Filter out nulls
+    )];
+    
+    // Get those NFTs
+    let trendingNFTs = [];
+    
+    if (nftIdsFromTransactions.length > 0) {
+      trendingNFTs = await NFT.find({
+        _id: { $in: nftIdsFromTransactions }
+      }).limit(limit);
+    }
+    
+    // If we don't have enough trending NFTs from transactions, get the most recently created ones
+    if (trendingNFTs.length < limit) {
+      const additionalNFTs = await NFT.find({
+        _id: { $nin: trendingNFTs.map(nft => nft._id) } // Exclude NFTs we already have
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit - trendingNFTs.length);
+      
+      trendingNFTs = [...trendingNFTs, ...additionalNFTs];
+    }
+    
+    console.log(`Found ${trendingNFTs.length} trending NFTs`);
+    
+    res.status(200).json({
+      success: true,
+      data: trendingNFTs
+    });
+  } catch (error) {
+    console.error('Error getting trending NFTs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch trending NFTs',
       error: error.message
     });
   }

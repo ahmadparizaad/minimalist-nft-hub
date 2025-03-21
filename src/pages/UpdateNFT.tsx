@@ -63,7 +63,7 @@ export default function UpdateNFT() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!nft || !isOwner) {
+    if (!nft || !isOwner || !account) {
       toast.error("You don't have permission to update this NFT");
       return;
     }
@@ -83,7 +83,8 @@ export default function UpdateNFT() {
         description,
         price: priceValue,
         isListed,
-        owner: nft.owner // Ensure owner is included to fix the unlist bug
+        owner: nft.owner,
+        address: account
       });
       
       toast.success("NFT updated successfully");

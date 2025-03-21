@@ -181,6 +181,30 @@ export default function NFTDetail() {
     }
   };
 
+  const handleShare = async () => {
+    if (!nft) return;
+    
+    try {
+      const shareData = {
+        title: nft.title,
+        text: `Check out this NFT: ${nft.title}`,
+        url: window.location.href,
+      };
+      
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        toast.success("NFT shared successfully!");
+      } else {
+        const shareText = `${shareData.title}\n${shareData.text}\n${shareData.url}\n\nImage: ${nft.image}`;
+        await navigator.clipboard.writeText(shareText);
+        toast.success("NFT link and image copied to clipboard!");
+      }
+    } catch (error) {
+      console.error("Error sharing NFT:", error);
+      toast.error("Failed to share NFT");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -247,7 +271,12 @@ export default function NFTDetail() {
                 </div>
                 
                 <div className="absolute top-4 right-4">
-                  <Button variant="outline" size="icon" className="bg-black/30 text-white backdrop-blur-sm border-none rounded-full">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="bg-black/30 text-white backdrop-blur-sm border-none rounded-full"
+                    onClick={handleShare}
+                  >
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -322,7 +351,8 @@ export default function NFTDetail() {
                               
                               await nftAPI.updateNFT(nft.tokenId, {
                                 isListed: false,
-                                owner: nft.owner
+                                owner: nft.owner,
+                                address: account
                               });
                               
                               // Refresh NFT data

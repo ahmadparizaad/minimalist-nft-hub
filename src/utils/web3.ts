@@ -1,4 +1,3 @@
-
 // This file would contain actual Web3 implementation in a production app
 // For now, we'll use mock implementations
 
@@ -7,7 +6,10 @@ export const formatAddress = (address: string | null): string => {
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 };
 
-export const formatPrice = (price: number, currency = 'USDC'): string => {
+export const formatPrice = (price: number | null | undefined, currency = 'USDC'): string => {
+  if (price === null || price === undefined || isNaN(price)) {
+    return `0 ${currency}`;
+  }
   return `${price.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${currency}`;
 };
 

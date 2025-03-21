@@ -9,6 +9,7 @@ import { NFT, Collection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { nftAPI } from "@/api/apiService";
 
 export default function Index() {
   const [featuredNFT, setFeaturedNFT] = useState<NFT | null>(null);
@@ -20,15 +21,42 @@ export default function Index() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // In a real app, these would be API calls
-        const nfts = generateMockNFTs(8);
+        // Fetch trending NFTs from API
+        const trendingResponse = await nftAPI.getTrendingNFTs(4);
+        let trendingData: NFT[] = [];
+        
+        if (trendingResponse.success && trendingResponse.data && trendingResponse.data.length > 0) {
+          trendingData = trendingResponse.data;
+          console.log('Using real trending NFTs from API');
+        } else {
+          // Fallback to mock data if API fails
+          trendingData = generateMockNFTs(4);
+          console.log('Using mock trending NFTs');
+        }
+        
+        // Generate collections data (mock for now)
         const collections = generateMockCollections(4);
         
-        setFeaturedNFT(nfts[0]);
-        setTrendingNFTs(nfts.slice(1));
+        // Fetch a real NFT from the API for the featured slot
+        const response = await nftAPI.getNFTByTokenId(26);
+        console.log('Featured NFT response:', response);
+        
+        // Only set the featuredNFT if the API call was successful and the data exists
+        if (response.success && response.data) {
+          setFeaturedNFT(response.data);
+        } else {
+          // Use the first trending NFT as a fallback for featured
+          setFeaturedNFT(trendingData[0]);
+        }
+        
+        setTrendingNFTs(trendingData);
         setTopCollections(collections);
       } catch (error) {
         console.error("Error fetching data:", error);
+        // Use mock data as fallback in case of error
+        const mockData = generateMockNFTs(8);
+        setFeaturedNFT(mockData[0]);
+        setTrendingNFTs(mockData.slice(1, 5));
       } finally {
         setIsLoading(false);
       }
@@ -108,7 +136,7 @@ export default function Index() {
                     <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
                   ))
                 : trendingNFTs.slice(0, 4).map((nft, index) => (
-                    <NFTCard key={nft.id} nft={nft} index={index} />
+                    <NFTCard key={nft._id} nft={nft} index={index} />
                   ))
               }
             </div>

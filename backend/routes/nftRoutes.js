@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { body } = require('express-validator');
 const nftController = require('../controllers/nftController');
@@ -17,6 +16,9 @@ const nftValidation = [
 
 // Get all NFTs
 router.get('/', nftController.getAllNFTs);
+
+// Get trending NFTs
+router.get('/trending', nftController.getTrendingNFTs);
 
 // Get NFT by ID
 router.get('/:id', nftController.getNFTById);

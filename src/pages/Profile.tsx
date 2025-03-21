@@ -19,7 +19,7 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Copy, ExternalLink, Edit, CheckCircle2, Share2, User, Image, MoreHorizontal } from "lucide-react";
-import { nftAPI, userAPI } from "@/api/apiService";
+import { nftAPI, userAPI, transactionAPI } from "@/api/apiService";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
@@ -95,43 +95,114 @@ export default function Profile() {
     const fetchProfileData = async () => {
       setIsLoading(true);
       try {
-        // First try to get NFTs from the blockchain/API
-        let fetchedNFTs: NFT[] = [];
+        // Try to get creator data from API
+        let creatorData = null;
         try {
-          const result = await getAllNFTs();
-          if (Array.isArray(result) && result.length > 0) {
-            fetchedNFTs = result as NFT[];
+          const creatorResponse = await userAPI.getUserByAddress(profileAddress);
+          if (creatorResponse && creatorResponse.data) {
+            creatorData = creatorResponse.data;
           }
         } catch (error) {
-          console.error("Error fetching NFTs from blockchain:", error);
-          // Fallback to mock data if API call fails
-          fetchedNFTs = generateMockNFTs(5);
+          console.error("Error fetching user data:", error);
+          // Fallback to mock creator data
+          creatorData = generateMockCreators(5).find(
+            c => c.address.toLowerCase() === profileAddress?.toLowerCase()
+          );
+        }
+        setCreator(creatorData || null);
+        
+        // Fetch owned NFTs from API
+        let ownedNFTsData: NFT[] = [];
+        try {
+          const ownedResponse = await nftAPI.getNFTsByOwner(profileAddress);
+          if (ownedResponse && ownedResponse.data) {
+            ownedNFTsData = ownedResponse.data;
+          }
+        } catch (error) {
+          console.error("Error fetching owned NFTs:", error);
+          // Fallback to blockchain call if API fails
+          try {
+            const result = await getMyNFTs();
+            if (Array.isArray(result) && result.length > 0) {
+              ownedNFTsData = result as NFT[];
+            }
+          } catch (blockchainError) {
+            console.error("Error fetching NFTs from blockchain:", blockchainError);
+            // Fallback to filtering mock data if both API and blockchain fail
+            const allNFTs = generateMockNFTs(5);
+            ownedNFTsData = allNFTs.filter(
+              nft => nft.owner.toLowerCase() === profileAddress.toLowerCase()
+            );
+          }
+        }
+        setOwnedNFTs(ownedNFTsData);
+        
+        // Fetch created NFTs from API
+        let createdNFTsData: NFT[] = [];
+        try {
+          const createdResponse = await nftAPI.getNFTsByCreator(profileAddress);
+          console.log("Creator API response:", createdResponse);
+          
+          if (createdResponse && createdResponse.data) {
+            // Check if data is an array or if it's inside a nested structure
+            if (Array.isArray(createdResponse.data)) {
+              createdNFTsData = createdResponse.data;
+            } else if (createdResponse.data.data && Array.isArray(createdResponse.data.data)) {
+              createdNFTsData = createdResponse.data.data;
+            }
+            console.log("Parsed created NFTs from API:", createdNFTsData);
+          }
+        } catch (error) {
+          console.error("Error fetching created NFTs:", error);
+          // Fallback to fetching all NFTs and filtering if created API fails
+          try {
+            console.log("Falling back to getAllNFTs for created NFTs");
+            const result = await getAllNFTs();
+            console.log("All NFTs result:", result);
+            
+            if (Array.isArray(result) && result.length > 0) {
+              createdNFTsData = (result as NFT[]).filter(
+                nft => nft.creator && nft.creator.toLowerCase() === profileAddress.toLowerCase()
+              );
+              console.log("Filtered created NFTs from all NFTs:", createdNFTsData);
+            }
+          } catch (blockchainError) {
+            console.error("Error fetching NFTs from blockchain:", blockchainError);
+            // Fallback to mock data
+            console.log("Falling back to mock data for created NFTs");
+            const allNFTs = generateMockNFTs(5);
+            createdNFTsData = allNFTs.filter(
+              nft => nft.creator.toLowerCase() === profileAddress.toLowerCase()
+            );
+          }
         }
         
-        setAllNfts(fetchedNFTs);
+        console.log("Final createdNFTs before setting state:", createdNFTsData);
+        setCreatedNFTs(createdNFTsData);
         
-        // Set creator data
-        const mockCreatorData = generateMockCreators(5).find(
-          c => c.address.toLowerCase() === profileAddress?.toLowerCase()
-        );
-        setCreator(mockCreatorData || null);
-        
-        // Set owned and created NFTs
-        if (profileAddress) {
-          const owned = fetchedNFTs.filter(
-            nft => nft.owner.toLowerCase() === profileAddress.toLowerCase()
-          );
-          setOwnedNFTs(owned);
-          
-          const created = fetchedNFTs.filter(
-            nft => nft.creator.toLowerCase() === profileAddress.toLowerCase()
-          );
-          setCreatedNFTs(created);
-          console.log(created);
+        // Also fetch all NFTs for potential other uses
+        try {
+          const allNFTsResponse = await getAllNFTs();
+          if (Array.isArray(allNFTsResponse) && allNFTsResponse.length > 0) {
+            setAllNfts(allNFTsResponse as NFT[]);
+          }
+        } catch (error) {
+          console.error("Error fetching all NFTs:", error);
+          setAllNfts(generateMockNFTs(5));
         }
         
         // Set transactions
-        setTransactions(generateMockTransactions());
+        try {
+          const txResponse = await transactionAPI.getTransactionsByUser(profileAddress);
+          if (txResponse && txResponse.data) {
+            setTransactions(txResponse.data);
+          } else {
+            setTransactions(generateMockTransactions());
+          }
+        } catch (error) {
+          console.error("Error fetching transactions:", error);
+          setTransactions(generateMockTransactions());
+        }
         
       } catch (error) {
         console.error("Error fetching profile data:", error);
@@ -145,7 +216,7 @@ export default function Profile() {
       console.log("Fetching NFTs for:", profileAddress);
       fetchProfileData();
     }
-  }, [profileAddress, getAllNFTs]);
+  }, [profileAddress, getAllNFTs, getMyNFTs]);
 
   const handleCopyAddress = () => {
     if (profileAddress) {
@@ -335,9 +406,9 @@ export default function Profile() {
             </TabsList>
 
             <TabsContent value="owned">
-              {allNfts.length > 0 ? (
+              {ownedNFTs.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {allNfts.map((nft) => (
+                  {ownedNFTs.map((nft) => (
                     <div key={nft._id} className="relative">
                       <NFTCard key={nft._id} nft={nft} />
                       {isOwner && (
@@ -388,7 +459,29 @@ export default function Profile() {
               {createdNFTs.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {createdNFTs.map((nft, index) => (
-                    <NFTCard key={nft._id} nft={nft} index={index} />
+                    <div key={nft._id} className="relative">
+                      <NFTCard key={nft._id} nft={nft} index={index} />
+                      {isOwner && (
+                        <div className="absolute top-2 right-2">
+                          <div className="relative group">
+                            <Button variant="outline" size="icon" className="bg-black/50 text-white backdrop-blur-sm rounded-full border-none">
+                              <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                            <div className="absolute top-0 right-0 mt-8 w-48 bg-background border border-border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                              <div className="p-1">
+                                <Link
+                                  to={`/update-nft/${nft.tokenId}`}
+                                  className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Update NFT
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -400,9 +493,9 @@ export default function Profile() {
                       : "This user hasn't created any NFTs yet"}
                   </p>
                   {isOwner && (
-                    <Button>
-                      Create NFT
-                    </Button>
+                    <Link to="/mint" onClick={() => console.log("Create NFT button clicked")}>
+                      <Button>Create NFT</Button>
+                    </Link>
                   )}
                 </div>
               )}
