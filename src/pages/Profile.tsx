@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { NFTCard } from "@/components/NFTCard";
@@ -19,7 +18,8 @@ import {
 } from "@/utils/ipfs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Copy, ExternalLink, Edit, CheckCircle2, Share2 } from "lucide-react";
+import { Copy, ExternalLink, Edit, CheckCircle2, Share2, User, Image, MoreHorizontal } from "lucide-react";
+import { nftAPI, userAPI } from "@/api/apiService";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
@@ -34,9 +34,53 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("owned");
   const [allNfts, setAllNfts] = useState<NFT[]>([]); // All NFTs
   const [profileNfts, setProfileNfts] = useState<NFT[]>([]); // Profile-specific NFTs
-
   const isOwner = address === account || !address;
   const profileAddress = address || account;
+  
+  // Add functions to set profile/banner image
+  const setAsProfileImage = async (nftImage: string) => {
+    if (!isOwner || !account) return;
+    
+    try {
+      toast.loading("Setting as profile image...");
+      
+      await userAPI.updateUser(account, {
+        address: account,
+        profileImage: nftImage
+      });
+      
+      toast.dismiss();
+      toast.success("Profile image updated successfully");
+      // Force reload to see the changes
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+      toast.dismiss();
+      toast.error("Failed to update profile image");
+    }
+  };
+
+  const setAsBannerImage = async (nftImage: string) => {
+    if (!isOwner || !account) return;
+    
+    try {
+      toast.loading("Setting as banner image...");
+      
+      await userAPI.updateUser(account, {
+        address: account,
+        coverImage: nftImage
+      });
+      
+      toast.dismiss();
+      toast.success("Banner image updated successfully");
+      // Force reload to see the changes
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating banner image:", error);
+      toast.dismiss();
+      toast.error("Failed to update banner image");
+    }
+  };
   
   useEffect(() => {
     console.log("Profile Address:", profileAddress);
@@ -294,7 +338,43 @@ export default function Profile() {
               {allNfts.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {allNfts.map((nft) => (
-                    <NFTCard key={nft._id} nft={nft} />
+                    <div key={nft._id} className="relative">
+                      <NFTCard key={nft._id} nft={nft} />
+                      {isOwner && (
+                        <div className="absolute top-2 right-2">
+                          <div className="relative group">
+                            <Button variant="outline" size="icon" className="bg-black/50 text-white backdrop-blur-sm rounded-full border-none">
+                              <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                            <div className="absolute top-0 right-0 mt-8 w-48 bg-background border border-border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                              <div className="p-1">
+                                <Link
+                                  to={`/update-nft/${nft.tokenId}`}
+                                  className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Update NFT
+                                </Link>
+                                <button 
+                                  onClick={() => setAsProfileImage(nft.image)}
+                                  className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
+                                >
+                                  <User className="h-4 w-4 mr-2" />
+                                  Set as Profile Image
+                                </button>
+                                <button 
+                                  onClick={() => setAsBannerImage(nft.image)}
+                                  className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
+                                >
+                                  <Image className="h-4 w-4 mr-2" />
+                                  Set as Banner
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (

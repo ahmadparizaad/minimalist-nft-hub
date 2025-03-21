@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +9,7 @@ import Marketplace from "./pages/Marketplace";
 import NFTDetail from "./pages/NFTDetail";
 import Mint from "./pages/Mint";
 import Profile from "./pages/Profile";
+import UpdateNFT from "./pages/UpdateNFT";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +26,7 @@ const App = () => (
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/nft/:id" element={<NFTDetail />} />
             <Route path="/mint" element={<Mint />} />
+            <Route path="/update-nft/:tokenId" element={<UpdateNFT />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:address" element={<Profile />} />
             <Route path="*" element={<NotFound />} />

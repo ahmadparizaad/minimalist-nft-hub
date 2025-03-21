@@ -264,7 +264,7 @@ export default function NFTDetail() {
                 </div>
                 <div className="p-4 rounded-xl bg-muted/50">
                   <p className="text-sm text-muted-foreground">Royalty</p>
-                  <p className="font-medium">{(nft.royaltyFee * 100).toFixed(1)}%</p>
+                  <p className="font-medium">{(nft.royaltyFee).toFixed(1)}%</p>
                 </div>
               </div>
             </motion.div>
@@ -300,22 +300,7 @@ export default function NFTDetail() {
               
               {isOwner && (
                 <div className="mb-8 flex gap-3">
-                  <Button 
-                    onClick={setAsProfileImage} 
-                    variant="outline" 
-                    className="flex gap-2"
-                  >
-                    <User className="h-4 w-4" />
-                    Set as Profile Image
-                  </Button>
-                  <Button 
-                    onClick={setAsBannerImage} 
-                    variant="outline" 
-                    className="flex gap-2"
-                  >
-                    <Image className="h-4 w-4" />
-                    Set as Banner
-                  </Button>
+                  {/* Set profile and banner buttons removed */}
                 </div>
               )}
               
@@ -328,7 +313,46 @@ export default function NFTDetail() {
                         <p className="text-2xl font-display font-bold">{formatPrice(nft.price, nft.currency)}</p>
                       </div>
                       {isOwner ? (
-                        <Button variant="outline" className="border-red-500 text-red-500 hover:bg-red-500/10">
+                        <Button 
+                          variant="outline" 
+                          className="border-red-500 text-red-500 hover:bg-red-500/10"
+                          onClick={async () => {
+                            try {
+                              toast.loading("Unlisting NFT...");
+                              
+                              await nftAPI.updateNFT(nft.tokenId, {
+                                isListed: false,
+                                owner: nft.owner
+                              });
+                              
+                              // Refresh NFT data
+                              const updatedNftResponse = await nftAPI.getNFTById(id || "");
+                              setNft(updatedNftResponse.data);
+                              
+                              // Add transaction to history
+                              const newTransaction: Transaction = {
+                                id: `tx-${Date.now()}`,
+                                type: 'unlist',
+                                nftId: nft._id,
+                                from: nft.owner,
+                                to: nft.owner,
+                                price: nft.price,
+                                currency: nft.currency,
+                                timestamp: new Date().toISOString(),
+                                txHash: `0x${Math.random().toString(16).slice(2, 66)}`
+                              };
+                              
+                              setTransactions([newTransaction, ...transactions]);
+                              
+                              toast.dismiss();
+                              toast.success("NFT unlisted successfully");
+                            } catch (error) {
+                              console.error("Error unlisting NFT:", error);
+                              toast.dismiss();
+                              toast.error("Failed to unlist NFT");
+                            }
+                          }}
+                        >
                           Unlist
                         </Button>
                       ) : (
@@ -366,14 +390,20 @@ export default function NFTDetail() {
                 </TabsList>
                 
                 <TabsContent value="attributes" className="mt-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {nft.attributes.map((attr, index) => (
-                      <div key={index} className="p-3 rounded-lg bg-muted/50 border border-border/30">
-                        <p className="text-xs text-muted-foreground uppercase">{attr.trait_type}</p>
-                        <p className="font-medium truncate">{attr.value}</p>
-                      </div>
-                    ))}
-                  </div>
+                  {nft.attributes && nft.attributes.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {nft.attributes.map((attr, index) => (
+                        <div key={index} className="p-3 rounded-lg bg-muted/50 border border-border/30">
+                          <p className="text-xs text-muted-foreground uppercase">{attr.trait_type}</p>
+                          <p className="font-medium truncate">{attr.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No attributes</p>
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="history" className="mt-4">
