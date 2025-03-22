@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 
 export function Footer() {
@@ -36,21 +35,21 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Resources</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-foreground/80 hover:text-primary transition-colors">Help Center</a></li>
-              <li><a href="#" className="text-foreground/80 hover:text-primary transition-colors">Platform Status</a></li>
-              <li><a href="#" className="text-foreground/80 hover:text-primary transition-colors">Partners</a></li>
-              <li><a href="#" className="text-foreground/80 hover:text-primary transition-colors">Blog</a></li>
+              <li><Link to="/help-center" className="text-foreground/80 hover:text-primary transition-colors">Help Center</Link></li>
+              <li><Link to="/status" className="text-foreground/80 hover:text-primary transition-colors">Platform Status</Link></li>
+              <li><Link to="/partners" className="text-foreground/80 hover:text-primary transition-colors">Partners</Link></li>
+              <li><Link to="/blog" className="text-foreground/80 hover:text-primary transition-colors">Blog</Link></li>
             </ul>
           </div>
         </div>
         
-        <div className="border-t border-border/40 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div className="flex flex-col md:flex-row justify-between items-center border-t border-border/30 pt-8">
           <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} Ethereal. All rights reserved.
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="#" className="text-foreground/80 hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="text-foreground/80 hover:text-primary transition-colors">Privacy</a>
+            <Link to="/terms" className="text-foreground/80 hover:text-primary transition-colors">Terms</Link>
+            <Link to="/privacy" className="text-foreground/80 hover:text-primary transition-colors">Privacy</Link>
           </div>
         </div>
       </div>

@@ -399,14 +399,14 @@ export default function Marketplace() {
 
             <div className="flex flex-col md:flex-row gap-6">
               {/* Desktop Filter Panel */}
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="hidden md:block w-64 flex-shrink-0"
               >
                 <FilterPanel />
-              </motion.div>
+              </motion.div> */}
 
               {/* NFT Grid */}
               <motion.div

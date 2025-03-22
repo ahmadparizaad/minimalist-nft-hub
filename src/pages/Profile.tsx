@@ -20,6 +20,17 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Copy, ExternalLink, Edit, CheckCircle2, Share2, User, Image, MoreHorizontal } from "lucide-react";
 import { nftAPI, userAPI, transactionAPI } from "@/api/apiService";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
@@ -37,6 +48,23 @@ export default function Profile() {
   const isOwner = address === account || !address;
   const profileAddress = address || account;
   
+  // Dialog states
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editUsernameValue, setEditUsernameValue] = useState("");
+  const [editBioValue, setEditBioValue] = useState("");
+  const [editBannerOpen, setEditBannerOpen] = useState(false);
+  const [editProfileImageOpen, setEditProfileImageOpen] = useState(false);
+  const [bannerURL, setBannerURL] = useState("");
+  const [profileImageURL, setProfileImageURL] = useState("");
+  
+  // Update form values when creator data changes
+  useEffect(() => {
+    if (creator) {
+      setEditUsernameValue(creator.name || "");
+      setEditBioValue(creator.bio || "");
+    }
+  }, [creator]);
+  
   // Add functions to set profile/banner image
   const setAsProfileImage = async (nftImage: string) => {
     if (!isOwner || !account) return;
@@ -51,8 +79,8 @@ export default function Profile() {
       
       toast.dismiss();
       toast.success("Profile image updated successfully");
-      // Force reload to see the changes
-      window.location.reload();
+      // Update local state to avoid reload
+      setCreator(prev => prev ? {...prev, profileImage: nftImage} : null);
     } catch (error) {
       console.error("Error updating profile image:", error);
       toast.dismiss();
@@ -73,12 +101,113 @@ export default function Profile() {
       
       toast.dismiss();
       toast.success("Banner image updated successfully");
-      // Force reload to see the changes
-      window.location.reload();
+      // Update local state to avoid reload
+      setCreator(prev => prev ? {...prev, coverImage: nftImage} : null);
     } catch (error) {
       console.error("Error updating banner image:", error);
       toast.dismiss();
       toast.error("Failed to update banner image");
+    }
+  };
+  
+  // Handle sharing profile
+  const handleShareProfile = async () => {
+    try {
+      // Create share data
+      const shareData = {
+        title: `${creator?.name || formatAddress(profileAddress)} | NFT Profile`,
+        text: `Check out ${creator?.name || formatAddress(profileAddress)}'s NFT collection`,
+        url: window.location.href,
+      };
+      
+      // Check if Web Share API is available
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        toast.success("Profile shared successfully!");
+      } else {
+        // Fallback to copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Profile link copied to clipboard!");
+      }
+    } catch (error) {
+      console.error("Error sharing profile:", error);
+      toast.error("Failed to share profile");
+    }
+  };
+  
+  // Update profile info
+  const handleUpdateProfile = async () => {
+    if (!isOwner || !account) return;
+    
+    try {
+      toast.loading("Updating profile...");
+      
+      await userAPI.updateUser(account, {
+        address: account,
+        name: editUsernameValue,
+        bio: editBioValue
+      });
+      
+      // Update local state
+      setCreator(prev => prev ? {...prev, name: editUsernameValue, bio: editBioValue} : null);
+      
+      toast.dismiss();
+      toast.success("Profile updated successfully");
+      setEditProfileOpen(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.dismiss();
+      toast.error("Failed to update profile");
+    }
+  };
+  
+  // Update banner with URL
+  const handleUpdateBanner = async () => {
+    if (!isOwner || !account || !bannerURL) return;
+    
+    try {
+      toast.loading("Updating banner...");
+      
+      await userAPI.updateUser(account, {
+        address: account,
+        coverImage: bannerURL
+      });
+      
+      // Update local state
+      setCreator(prev => prev ? {...prev, coverImage: bannerURL} : null);
+      
+      toast.dismiss();
+      toast.success("Banner updated successfully");
+      setEditBannerOpen(false);
+    } catch (error) {
+      console.error("Error updating banner:", error);
+      toast.dismiss();
+      toast.error("Failed to update banner");
+    }
+  };
+  
+  // Update profile image with URL
+  const handleUpdateProfileImage = async () => {
+    if (!isOwner || !account || !profileImageURL) return;
+    
+    try {
+      toast.loading("Updating profile image...");
+      
+      await userAPI.updateUser(account, {
+        address: account,
+        profileImage: profileImageURL
+      });
+      
+      // Update local state
+      setCreator(prev => prev ? {...prev, profileImage: profileImageURL} : null);
+      
+      toast.dismiss();
+      toast.success("Profile image updated successfully");
+      setEditProfileImageOpen(false);
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+      toast.dismiss();
+      toast.error("Failed to update profile image");
     }
   };
   
@@ -276,10 +405,22 @@ export default function Profile() {
       <main className="flex-1 pt-20">
         
         {/* Banner */}
-        <div className="h-48 md:h-64 bg-gradient-to-r from-primary/30 to-primary/10">
+        <div 
+          className="h-48 md:h-64 bg-gradient-to-r from-primary/30 to-primary/10"
+          style={creator?.coverImage ? { 
+            backgroundImage: `url(${creator.coverImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          } : {}}
+        >
           {isOwner && (
             <div className="container mx-auto max-w-6xl h-full flex justify-end items-start pt-4 px-4">
-              <Button variant="outline" size="sm" className="bg-white/30 backdrop-blur-sm">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-white/30 backdrop-blur-sm"
+                onClick={() => setEditBannerOpen(true)}
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Banner
               </Button>
@@ -298,7 +439,7 @@ export default function Profile() {
             <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
               <div className="relative">
                 <img
-                  src={creator?.avatar || `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`}
+                  src={creator?.profileImage || creator?.avatar || `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`}
                   alt="Profile"
                   className="w-32 h-32 rounded-full border-4 border-background object-cover"
                 />
@@ -312,6 +453,7 @@ export default function Profile() {
                     variant="outline"
                     size="sm"
                     className="absolute bottom-0 right-0 bg-white/80 backdrop-blur-sm rounded-full p-1 h-8 w-8"
+                    onClick={() => setEditProfileImageOpen(true)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -337,7 +479,7 @@ export default function Profile() {
                     <Copy className="h-3.5 w-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                    <a href={`https://explorer.skale.network/address/${profileAddress}`} target="_blank" rel="noreferrer">
+                    <a href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${profileAddress}`} target="_blank" rel="noreferrer">
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   </Button>
@@ -354,11 +496,15 @@ export default function Profile() {
                     Follow
                   </Button>
                 )}
-                <Button variant="outline" size="icon">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={handleShareProfile}
+                >
                   <Share2 className="h-4 w-4" />
                 </Button>
                 {isOwner && (
-                  <Button>
+                  <Button onClick={() => setEditProfileOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Profile
                   </Button>
@@ -380,6 +526,148 @@ export default function Profile() {
                 <p className="text-sm text-muted-foreground">Following</p>
               </div>
             </div>
+
+            {/* Edit Profile Dialog */}
+            <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Profile</DialogTitle>
+                  <DialogDescription>
+                    Make changes to your profile information.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="username" className="text-right">
+                      Username
+                    </Label>
+                    <Input
+                      id="username"
+                      value={editUsernameValue}
+                      onChange={(e) => setEditUsernameValue(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="bio" className="text-right">
+                      Bio
+                    </Label>
+                    <Textarea
+                      id="bio"
+                      value={editBioValue}
+                      onChange={(e) => setEditBioValue(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditProfileOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleUpdateProfile}>
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            {/* Edit Banner Dialog */}
+            <Dialog open={editBannerOpen} onOpenChange={setEditBannerOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Banner</DialogTitle>
+                  <DialogDescription>
+                    Update your profile banner.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="bannerURL" className="text-right">
+                      Image URL
+                    </Label>
+                    <Input
+                      id="bannerURL"
+                      placeholder="https://example.com/banner.jpg"
+                      value={bannerURL}
+                      onChange={(e) => setBannerURL(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                  {bannerURL && (
+                    <div className="mt-2 rounded-md overflow-hidden">
+                      <img 
+                        src={bannerURL} 
+                        alt="Banner Preview" 
+                        className="w-full h-32 object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1200x400?text=Invalid+Image+URL';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditBannerOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleUpdateBanner} disabled={!bannerURL}>
+                    Update Banner
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            {/* Edit Profile Image Dialog */}
+            <Dialog open={editProfileImageOpen} onOpenChange={setEditProfileImageOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Profile Image</DialogTitle>
+                  <DialogDescription>
+                    Update your profile image.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="profileImageURL" className="text-right">
+                      Image URL
+                    </Label>
+                    <Input
+                      id="profileImageURL"
+                      placeholder="https://example.com/profile.jpg"
+                      value={profileImageURL}
+                      onChange={(e) => setProfileImageURL(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                  {profileImageURL && (
+                    <div className="mt-2 flex justify-center">
+                      <img 
+                        src={profileImageURL} 
+                        alt="Profile Preview" 
+                        className="w-32 h-32 rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=Invalid+Image+URL';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditProfileImageOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleUpdateProfileImage} disabled={!profileImageURL}>
+                    Update Profile Image
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </motion.div>
 
           {/* Tabs */}
