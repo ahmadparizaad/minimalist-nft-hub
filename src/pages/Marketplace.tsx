@@ -356,7 +356,7 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <div>
+      {/* <div>
         <h3 className="text-lg font-medium mb-3">Listing Status</h3>
         <div className="flex flex-wrap gap-2">
           <Badge
@@ -374,7 +374,7 @@ export default function Marketplace() {
             All NFTs
           </Badge>
         </div>
-      </div>
+      </div> */}
 
       <div>
         <h3 className="text-lg font-medium mb-3">Sort By</h3>

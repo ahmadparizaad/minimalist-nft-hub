@@ -825,7 +825,7 @@ export default function Profile() {
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <h1 className="text-xl text-black font-display font-bold bg-white bg-opacity-50 rounded-3xl px-5 py-1">
+                      <h1 className="text-xl text-black font-display font-semibold bg-white bg-opacity-50 rounded-3xl px-5 py-1">
                         {creator?.username || creator?.name || formatAddress(profileAddress)}
                       </h1>
                       {isOwner && (
