@@ -72,7 +72,7 @@ export function FeaturedNFT({ nft }: FeaturedNFTProps) {
                 {formatPrice(nft.price)}
               </span>
               <span className="text-sm text-muted-foreground">
-                Royalty: {((nft.royaltyFee || 0) * 100).toFixed(1)}%
+                Royalty: {((nft.royaltyFee || 0)).toFixed(1)}%
               </span>
             </div>
           </motion.div>

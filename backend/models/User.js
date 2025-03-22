@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema(
@@ -52,6 +51,24 @@ const userSchema = new mongoose.Schema(
         ref: 'Collection'
       }
     ],
+    followers: [
+      {
+        type: String  // Store wallet addresses
+      }
+    ],
+    following: [
+      {
+        type: String  // Store wallet addresses
+      }
+    ],
+    followersCount: {
+      type: Number,
+      default: 0
+    },
+    followingCount: {
+      type: Number,
+      default: 0
+    },
     totalVolume: {
       type: Number,
       default: 0

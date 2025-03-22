@@ -1,4 +1,3 @@
-
 export interface NFT {
   _id: string;
   tokenId: number;
@@ -58,8 +57,10 @@ export interface Creator {
   bio: string;
   verified: boolean;
   volumeTraded: number;
-  followers: number;
-  following: number;
+  followers: number | string[]; // Could be either a count or an array of addresses
+  following: number | string[]; // Could be either a count or an array of addresses
+  followersCount?: number; // Explicit count of followers
+  followingCount?: number; // Explicit count of following
   username?: string; // Adding for backward compatibility
   profileImage?: string; // Adding for backward compatibility
   coverImage?: string; // Adding for backward compatibility
@@ -86,6 +87,7 @@ export interface MarketplaceFilters {
   creators: string[];
   collections: string[];
   searchQuery: string;
+  isListed?: boolean;
 }
 
 export interface PriceRange {

@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 
 const attributeSchema = new mongoose.Schema({
@@ -27,7 +26,9 @@ const nftSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
-    image: {
+    // We're removing redundant image and metadataURI fields and using only ipfsHash
+    // The ipfsHash will be used to generate both image URLs and metadata URIs
+    ipfsHash: {
       type: String,
       required: true
     },
@@ -71,13 +72,6 @@ const nftSchema = new mongoose.Schema(
       default: 'ERC-721'
     },
     attributes: [attributeSchema],
-    ipfsHash: {
-      type: String,
-      required: true
-    },
-    metadataURI: {
-      type: String
-    },
     collectionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Collection',
@@ -103,6 +97,20 @@ const nftSchema = new mongoose.Schema(
 
 // Create a compound index for tokenId to ensure uniqueness
 nftSchema.index({ tokenId: 1 }, { unique: true });
+
+// Virtual property to calculate image URL from ipfsHash
+nftSchema.virtual('image').get(function() {
+  return `https://ipfs.io/ipfs/${this.ipfsHash}`;
+});
+
+// Virtual property to calculate metadataURI from ipfsHash
+nftSchema.virtual('metadataURI').get(function() {
+  return `https://ipfs.io/ipfs/${this.ipfsHash}`;
+});
+
+// Ensure virtuals are included when converting to JSON
+nftSchema.set('toJSON', { virtuals: true });
+nftSchema.set('toObject', { virtuals: true });
 
 const NFT = mongoose.model('NFT', nftSchema);
 

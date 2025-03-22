@@ -11,6 +11,7 @@ import Mint from "./pages/Mint";
 import Profile from "./pages/Profile";
 import UpdateNFT from "./pages/UpdateNFT";
 import NotFound from "./pages/NotFound";
+import TrendingNFTs from "./pages/TrendingNFTs";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/update-nft/:tokenId" element={<UpdateNFT />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:address" element={<Profile />} />
+            <Route path="/trending" element={<TrendingNFTs />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

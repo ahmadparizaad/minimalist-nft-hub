@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { body } = require('express-validator');
 const userController = require('../controllers/userController');
@@ -23,5 +22,17 @@ router.get('/', userController.getAllUsers);
 
 // Get user stats
 router.get('/stats/:address', userController.getUserStats);
+
+// Follow a user
+router.post('/follow', userController.followUser);
+
+// Unfollow a user
+router.post('/unfollow', userController.unfollowUser);
+
+// Check follow status
+router.get('/follow-status', userController.getFollowStatus);
+
+// Get top traders
+router.get('/top-traders', userController.getTopTraders);
 
 module.exports = router;

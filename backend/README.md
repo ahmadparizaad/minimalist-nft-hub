@@ -6,8 +6,8 @@ This is the backend server for the Minimalist NFT Hub marketplace. It provides t
 
 1. Install dependencies:
 ```bash
-npm install
-```
+   npm install
+   ```
 
 2. Create a `.env` file based on `.env.example`:
 ```bash
@@ -46,8 +46,8 @@ npm start
 
 For development with auto-reloading:
 ```bash
-npm run dev
-```
+   npm run dev
+   ```
 
 ## NFT Contract Integration
 

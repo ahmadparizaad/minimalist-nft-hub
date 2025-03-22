@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useWeb3 } from "@/context/Web3Context";
 import { formatAddress } from "@/utils/web3";
@@ -11,10 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Link, useNavigate } from "react-router-dom";
 
 export function WalletButton() {
   const { web3State, connectWallet, disconnectWallet, requestSFuel } = useWeb3();
   const { isConnected, account, sFuelBalance, usdcBalance, isLoading, hasRequestedSFuel } = web3State;
+  const navigate = useNavigate();
 
   if (isConnected && account) {
     return (
@@ -29,7 +30,12 @@ export function WalletButton() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 glass">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuItem 
+            onClick={() => navigate(`/profile/${account}`)}
+            className="cursor-pointer"
+          >
+            My Account
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="flex justify-between">
             <span>Balance:</span>
@@ -40,14 +46,14 @@ export function WalletButton() {
             <span className="font-medium">{sFuelBalance.toFixed(4)}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
+          {/* <DropdownMenuItem 
             disabled={hasRequestedSFuel || isLoading}
             onClick={() => requestSFuel()}
             className="cursor-pointer"
           >
             <CircleDollarSign className="mr-2 h-4 w-4" />
             <span>{isLoading ? 'Requesting...' : 'Request sFuel'}</span>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
           <DropdownMenuItem 
             onClick={() => disconnectWallet()}
             className="cursor-pointer text-red-500 focus:text-red-500"

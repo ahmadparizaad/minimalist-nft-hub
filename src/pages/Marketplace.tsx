@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -14,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useWeb3 } from "@/context/Web3Context";
 import { nftAPI } from "@/api/apiService";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Default filters
 const defaultFilters: MarketplaceFilters = {
@@ -25,11 +25,14 @@ const defaultFilters: MarketplaceFilters = {
   creators: [],
   collections: [],
   searchQuery: '',
+  isListed: true, // Only show listed NFTs by default
 };
 
 export default function Marketplace() {
   const { web3State } = useWeb3();
   const { account } = web3State;
+  const location = useLocation();
+  const navigate = useNavigate();
   
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [filteredNfts, setFilteredNfts] = useState<NFT[]>([]);
@@ -41,6 +44,29 @@ export default function Marketplace() {
 
   // For mobile filter drawer
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  // Parse URL query parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const categoryParam = searchParams.get('category');
+    const listedParam = searchParams.get('listed');
+    
+    const newFilters = { ...filters };
+    
+    // Apply category filter from URL
+    if (categoryParam) {
+      newFilters.categories = [categoryParam];
+      console.log(`Filtering by category: ${categoryParam}`);
+    }
+    
+    // Apply listing status filter
+    if (listedParam !== null) {
+      newFilters.isListed = listedParam === 'true';
+      console.log(`Filtering by listing status: ${listedParam}`);
+    }
+    
+    setFilters(newFilters);
+  }, [location.search]);
 
   useEffect(() => {
     const fetchNFTs = async () => {
@@ -60,7 +86,6 @@ export default function Marketplace() {
         }
   
         setNfts(fetchedNFTs);
-        setFilteredNfts(fetchedNFTs);
         
         // Extract available categories and rarities - add explicit type casting
         const categories = [...new Set(fetchedNFTs.map((nft: NFT) => nft.category))] as string[];
@@ -85,10 +110,42 @@ export default function Marketplace() {
     applyFilters();
   }, [filters, nfts]);
 
+  // Update URL when filters change
+  useEffect(() => {
+    // Only update URL if filters have changed from default
+    if (filters.categories.length > 0 || filters.isListed === false) {
+      const searchParams = new URLSearchParams();
+      
+      // Add category to URL if set
+      if (filters.categories.length > 0) {
+        searchParams.set('category', filters.categories[0]);
+      }
+      
+      // Add listed status to URL if not default
+      if (filters.isListed === false) {
+        searchParams.set('listed', 'false');
+      }
+      
+      const newSearch = searchParams.toString();
+      const newUrl = newSearch ? `?${newSearch}` : '';
+      
+      // Update URL without triggering navigation
+      navigate({
+        pathname: location.pathname,
+        search: newUrl
+      }, { replace: true });
+    }
+  }, [filters.categories, filters.isListed, navigate, location.pathname]);
+
   const applyFilters = () => {
-    const { priceRange, categories, rarities, tokenStandards, sortBy, searchQuery } = filters;
+    const { priceRange, categories, rarities, tokenStandards, sortBy, searchQuery, isListed } = filters;
 
     let filtered = [...nfts];
+
+    // Filter by listing status
+    if (isListed !== undefined) {
+      filtered = filtered.filter(nft => nft.isListed === isListed);
+    }
 
     // Filter by price range
     filtered = filtered.filter(
@@ -215,7 +272,8 @@ export default function Marketplace() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium mb-3">Price Range</h3>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start gap-2">
+          <div className="flex gap-2 items-center">
           <Input
             type="number"
             placeholder="Min"
@@ -235,6 +293,7 @@ export default function Marketplace() {
             }
             className="w-24"
           />
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -293,6 +352,26 @@ export default function Marketplace() {
             onClick={() => handleToggleTokenStandard("ERC-1155")}
           >
             ERC-1155
+          </Badge>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-medium mb-3">Listing Status</h3>
+        <div className="flex flex-wrap gap-2">
+          <Badge
+            variant={filters.isListed ? "default" : "outline"}
+            className="cursor-pointer"
+            onClick={() => handleFilterChange({ isListed: true })}
+          >
+            Listed Only
+          </Badge>
+          <Badge
+            variant={!filters.isListed ? "default" : "outline"}
+            className="cursor-pointer"
+            onClick={() => handleFilterChange({ isListed: false })}
+          >
+            All NFTs
           </Badge>
         </div>
       </div>
@@ -399,14 +478,14 @@ export default function Marketplace() {
 
             <div className="flex flex-col md:flex-row gap-6">
               {/* Desktop Filter Panel */}
-              {/* <motion.div
+              <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="hidden md:block w-64 flex-shrink-0"
               >
                 <FilterPanel />
-              </motion.div> */}
+              </motion.div>
 
               {/* NFT Grid */}
               <motion.div

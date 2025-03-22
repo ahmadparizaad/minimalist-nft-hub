@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { WalletButton } from "./WalletButton";
 import { useState, useEffect } from "react";
@@ -27,13 +26,14 @@ export function Navbar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? "py-3 bg-white/80 backdrop-blur-md shadow-sm" 
-          : "py-5 bg-transparent"
+          ? "py-2 bg-white/80 backdrop-blur-md shadow-sm" 
+          : "py-3 bg-transparent"
       }`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="text-xl font-display font-bold">
+      <div className="flex items-center">
+          <Link to="/" className="flex gap-1 text-xl font-display font-bold">
+          <img src="/processed_logo.png" alt="NapFT" className="h-7 w-auto my-0" />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
               NapFT
             </span>

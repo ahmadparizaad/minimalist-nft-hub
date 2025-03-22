@@ -18,7 +18,7 @@ import {
 } from "@/utils/ipfs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Copy, ExternalLink, Edit, CheckCircle2, Share2, User, Image, MoreHorizontal } from "lucide-react";
+import { Copy, ExternalLink, Edit, CheckCircle2, Share2, User, Image, MoreHorizontal, Users } from "lucide-react";
 import { nftAPI, userAPI, transactionAPI } from "@/api/apiService";
 import { 
   Dialog, 
@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
@@ -48,6 +49,20 @@ export default function Profile() {
   const isOwner = address === account || !address;
   const profileAddress = address || account;
   
+  // Follow state
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+  
+  // Followers/Following dialog state
+  const [followersOpen, setFollowersOpen] = useState(false);
+  const [followingOpen, setFollowingOpen] = useState(false);
+  const [followersList, setFollowersList] = useState<{ address: string; username?: string; profileImage?: string; isFollowing: boolean }[]>([]);
+  const [followingList, setFollowingList] = useState<{ address: string; username?: string; profileImage?: string; isFollowing: boolean }[]>([]);
+  const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
+  const [isLoadingFollowing, setIsLoadingFollowing] = useState(false);
+  
   // Dialog states
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editUsernameValue, setEditUsernameValue] = useState("");
@@ -64,6 +79,98 @@ export default function Profile() {
       setEditBioValue(creator.bio || "");
     }
   }, [creator]);
+  
+  // Check follow status
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!account || isOwner) return;
+      
+      try {
+        const response = await userAPI.getFollowStatus(account, profileAddress);
+        if (response && response.success) {
+          setIsFollowing(response.isFollowing);
+        }
+      } catch (error) {
+        console.error("Error checking follow status:", error);
+      }
+    };
+    
+    if (account && profileAddress) {
+      checkFollowStatus();
+    }
+  }, [account, profileAddress, isOwner]);
+  
+  // Handle follow/unfollow
+  const handleFollow = async () => {
+    if (!account || isOwner) return;
+    
+    setIsFollowLoading(true);
+    try {
+      if (isFollowing) {
+        // Unfollow
+        const response = await userAPI.unfollowUser(account, profileAddress);
+        if (response && response.success) {
+          setIsFollowing(false);
+          // Update local count state
+          setFollowersCount(prev => Math.max(0, prev - 1));
+          // Also update the creator object if it exists
+          if (creator) {
+            if (typeof creator.followersCount === 'number') {
+              setCreator({
+                ...creator,
+                followersCount: Math.max(0, creator.followersCount - 1)
+              });
+            } else if (Array.isArray(creator.followers)) {
+              // Filter out the current user from followers array
+              const updatedFollowers = creator.followers.filter(
+                addr => addr.toLowerCase() !== account.toLowerCase()
+              );
+              setCreator({
+                ...creator,
+                followers: updatedFollowers
+              });
+            }
+          }
+          toast.success(`Unfollowed ${creator?.username || formatAddress(profileAddress)}`);
+        } else {
+          toast.error("Failed to unfollow user");
+        }
+      } else {
+        // Follow
+        const response = await userAPI.followUser(account, profileAddress);
+        if (response && response.success) {
+          setIsFollowing(true);
+          // Update local count state
+          setFollowersCount(prev => prev + 1);
+          // Also update the creator object if it exists
+          if (creator) {
+            if (typeof creator.followersCount === 'number') {
+              setCreator({
+                ...creator,
+                followersCount: creator.followersCount + 1
+              });
+            } else if (Array.isArray(creator.followers)) {
+              // Add current user to followers array if not already present
+              if (!creator.followers.some(addr => addr.toLowerCase() === account.toLowerCase())) {
+                setCreator({
+                  ...creator,
+                  followers: [...creator.followers, account]
+                });
+              }
+            }
+          }
+          toast.success(`Following ${creator?.username || formatAddress(profileAddress)}`);
+        } else {
+          toast.error("Failed to follow user");
+        }
+      }
+    } catch (error) {
+      console.error("Error handling follow:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
   
   // Add functions to set profile/banner image
   const setAsProfileImage = async (nftImage: string) => {
@@ -135,7 +242,7 @@ export default function Profile() {
     }
   };
   
-  // Update profile info
+  // Update profile information
   const handleUpdateProfile = async () => {
     if (!isOwner || !account) return;
     
@@ -144,16 +251,32 @@ export default function Profile() {
       
       await userAPI.updateUser(account, {
         address: account,
-        name: editUsernameValue,
+        username: editUsernameValue,
         bio: editBioValue
       });
       
       // Update local state
-      setCreator(prev => prev ? {...prev, name: editUsernameValue, bio: editBioValue} : null);
+      setCreator(prev => prev ? {
+        ...prev, 
+        username: editUsernameValue,
+        name: editUsernameValue, // Update both fields to ensure consistency
+        bio: editBioValue
+      } : null);
       
       toast.dismiss();
       toast.success("Profile updated successfully");
       setEditProfileOpen(false);
+      
+      // Save to local storage to persist between refreshes
+      localStorage.setItem('userProfile', JSON.stringify({
+        address: account,
+        username: editUsernameValue,
+        name: editUsernameValue,
+        bio: editBioValue,
+        profileImage: creator?.profileImage,
+        coverImage: creator?.coverImage
+      }));
+      
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.dismiss();
@@ -230,13 +353,48 @@ export default function Profile() {
           const creatorResponse = await userAPI.getUserByAddress(profileAddress);
           if (creatorResponse && creatorResponse.data) {
             creatorData = creatorResponse.data;
+            // If the API returns data, update the local state
+            if (profileAddress === account) {
+              localStorage.setItem('userProfile', JSON.stringify(creatorData));
+            }
+            
+            // Update followers/following counts
+            if (typeof creatorData.followersCount === 'number') {
+              setFollowersCount(creatorData.followersCount);
+            } else if (Array.isArray(creatorData.followers)) {
+              setFollowersCount(creatorData.followers.length);
+            }
+            
+            if (typeof creatorData.followingCount === 'number') {
+              setFollowingCount(creatorData.followingCount);
+            } else if (Array.isArray(creatorData.following)) {
+              setFollowingCount(creatorData.following.length);
+            }
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
-          // Fallback to mock creator data
-          creatorData = generateMockCreators(5).find(
-            c => c.address.toLowerCase() === profileAddress?.toLowerCase()
-          );
+          // Check if we have locally saved profile data for this address
+          if (profileAddress === account) {
+            const savedProfile = localStorage.getItem('userProfile');
+            if (savedProfile) {
+              try {
+                const parsedProfile = JSON.parse(savedProfile);
+                if (parsedProfile.address === profileAddress) {
+                  creatorData = parsedProfile;
+                  console.log("Using locally saved profile data:", creatorData);
+                }
+              } catch (e) {
+                console.error("Error parsing saved profile data:", e);
+              }
+            }
+          }
+          
+          // If still no data, fallback to mock creator data
+          if (!creatorData) {
+            creatorData = generateMockCreators(5).find(
+              c => c.address.toLowerCase() === profileAddress?.toLowerCase()
+            );
+          }
         }
         setCreator(creatorData || null);
         
@@ -354,6 +512,209 @@ export default function Profile() {
     }
   };
 
+  // Fetch followers and following lists
+  const fetchFollowersList = async () => {
+    if (!profileAddress) return;
+    
+    setIsLoadingFollowers(true);
+    try {
+      // Make a direct API call to get followers
+      const response = await userAPI.getUserByAddress(profileAddress);
+      
+      if (response && response.data) {
+        // Handle the case where followers is an array of addresses
+        if (response.data.followers && Array.isArray(response.data.followers)) {
+          const followersArray = response.data.followers;
+          
+          if (followersArray.length > 0) {
+            const fetchedFollowers = [];
+            
+            for (const followerAddress of followersArray) {
+              try {
+                const followerResponse = await userAPI.getUserByAddress(followerAddress);
+                // Check if current user is following this follower
+                let isFollowingThisUser = false;
+                if (account) {
+                  const followStatusResponse = await userAPI.getFollowStatus(account, followerAddress);
+                  isFollowingThisUser = followStatusResponse?.isFollowing || false;
+                }
+                
+                if (followerResponse && followerResponse.data) {
+                  fetchedFollowers.push({
+                    address: followerAddress,
+                    username: followerResponse.data.username || followerResponse.data.name,
+                    profileImage: followerResponse.data.profileImage,
+                    isFollowing: isFollowingThisUser
+                  });
+                } else {
+                  fetchedFollowers.push({
+                    address: followerAddress,
+                    isFollowing: isFollowingThisUser
+                  });
+                }
+              } catch (error) {
+                console.error(`Error fetching follower ${followerAddress}:`, error);
+                fetchedFollowers.push({
+                  address: followerAddress,
+                  isFollowing: false
+                });
+              }
+            }
+            
+            setFollowersList(fetchedFollowers);
+          } else {
+            // Empty followers array
+            setFollowersList([]);
+          }
+        } else {
+          // Handle the case where followers is not an array (just a count)
+          console.log("No followers array available, just a count:", 
+            typeof response.data.followersCount === 'number' 
+              ? response.data.followersCount 
+              : typeof response.data.followers === 'number' 
+                ? response.data.followers 
+                : 0
+          );
+          setFollowersList([]);
+        }
+      } else {
+        // No user data
+        setFollowersList([]);
+      }
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+      toast.error('Failed to load followers');
+      setFollowersList([]);
+    } finally {
+      setIsLoadingFollowers(false);
+    }
+  };
+  
+  const fetchFollowingList = async () => {
+    if (!profileAddress) return;
+    
+    setIsLoadingFollowing(true);
+    try {
+      // Make a direct API call to get following
+      const response = await userAPI.getUserByAddress(profileAddress);
+      
+      if (response && response.data) {
+        // Handle the case where following is an array of addresses
+        if (response.data.following && Array.isArray(response.data.following)) {
+          const followingArray = response.data.following;
+          
+          if (followingArray.length > 0) {
+            const fetchedFollowing = [];
+            
+            for (const followingAddress of followingArray) {
+              try {
+                const followingResponse = await userAPI.getUserByAddress(followingAddress);
+                if (followingResponse && followingResponse.data) {
+                  fetchedFollowing.push({
+                    address: followingAddress,
+                    username: followingResponse.data.username || followingResponse.data.name,
+                    profileImage: followingResponse.data.profileImage,
+                    isFollowing: true // If they're in our following list, we're following them
+                  });
+                } else {
+                  fetchedFollowing.push({
+                    address: followingAddress,
+                    isFollowing: true
+                  });
+                }
+              } catch (error) {
+                console.error(`Error fetching following ${followingAddress}:`, error);
+                fetchedFollowing.push({
+                  address: followingAddress,
+                  isFollowing: true
+                });
+              }
+            }
+            
+            setFollowingList(fetchedFollowing);
+          } else {
+            // Empty following array
+            setFollowingList([]);
+          }
+        } else {
+          // Handle the case where following is not an array (just a count)
+          console.log("No following array available, just a count:", 
+            typeof response.data.followingCount === 'number' 
+              ? response.data.followingCount 
+              : typeof response.data.following === 'number' 
+                ? response.data.following 
+                : 0
+          );
+          setFollowingList([]);
+        }
+      } else {
+        // No user data
+        setFollowingList([]);
+      }
+    } catch (error) {
+      console.error('Error fetching following:', error);
+      toast.error('Failed to load following');
+      setFollowingList([]);
+    } finally {
+      setIsLoadingFollowing(false);
+    }
+  };
+  
+  // Handle follow/unfollow from lists
+  const handleFollowFromList = async (userAddress: string, isAlreadyFollowing: boolean, fromFollowersList: boolean) => {
+    if (!account || userAddress === account) return;
+    
+    try {
+      if (isAlreadyFollowing) {
+        // Unfollow
+        const response = await userAPI.unfollowUser(account, userAddress);
+        if (response && response.success) {
+          // Update the relevant list
+          if (fromFollowersList) {
+            setFollowersList(prev => 
+              prev.map(user => 
+                user.address === userAddress ? { ...user, isFollowing: false } : user
+              )
+            );
+          } else {
+            // For following list, you might want to remove them entirely
+            setFollowingList(prev => prev.filter(user => user.address !== userAddress));
+          }
+          toast.success(`Unfollowed ${formatAddress(userAddress)}`);
+        }
+      } else {
+        // Follow
+        const response = await userAPI.followUser(account, userAddress);
+        if (response && response.success) {
+          // Update the followers list if that's where the action came from
+          if (fromFollowersList) {
+            setFollowersList(prev => 
+              prev.map(user => 
+                user.address === userAddress ? { ...user, isFollowing: true } : user
+              )
+            );
+          }
+          toast.success(`Following ${formatAddress(userAddress)}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling follow from list:', error);
+      toast.error('Failed to update follow status');
+    }
+  };
+  
+  // Handle opening the followers dialog
+  const handleOpenFollowers = () => {
+    fetchFollowersList();
+    setFollowersOpen(true);
+  };
+  
+  // Handle opening the following dialog
+  const handleOpenFollowing = () => {
+    fetchFollowingList();
+    setFollowingOpen(true);
+  };
+
   if (!profileAddress) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -462,15 +823,30 @@ export default function Profile() {
 
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                  <h1 className="text-2xl md:text-3xl font-display font-bold">
-                    {creator?.name || `User ${profileAddress?.substring(2, 6)}`}
-                  </h1>
-                  {creator?.verified && (
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Verified
-                    </span>
-                  )}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-xl text-black font-display font-bold bg-white bg-opacity-50 rounded-3xl px-5 py-1">
+                        {creator?.username || creator?.name || formatAddress(profileAddress)}
+                      </h1>
+                      {isOwner && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-white"
+                          onClick={() => {
+                            setEditUsernameValue(creator?.username || creator?.name || "");
+                            setEditBioValue(creator?.bio || "");
+                            setEditProfileOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {creator?.verified && (
+                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center mt-2 text-muted-foreground">
@@ -492,8 +868,22 @@ export default function Profile() {
 
               <div className="flex gap-2 mt-4 md:mt-0">
                 {!isOwner && (
-                  <Button variant="outline">
-                    Follow
+                  <Button 
+                    variant={isFollowing ? "outline" : "default"}
+                    onClick={handleFollow}
+                    disabled={isFollowLoading}
+                    className={isFollowing ? "border-primary text-primary hover:bg-primary/10" : ""}
+                  >
+                    {isFollowLoading ? (
+                      <>
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></span>
+                        Loading...
+                      </>
+                    ) : isFollowing ? (
+                      "Following"
+                    ) : (
+                      "Follow"
+                    )}
                   </Button>
                 )}
                 <Button 
@@ -503,27 +893,51 @@ export default function Profile() {
                 >
                   <Share2 className="h-4 w-4" />
                 </Button>
-                {isOwner && (
+                {/* {isOwner && (
                   <Button onClick={() => setEditProfileOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Profile
                   </Button>
-                )}
+                )} */}  
               </div>
             </div>
 
-            <div className="grid grid-cols-3 md:w-auto md:inline-grid gap-6 mt-6 bg-muted/30 rounded-xl p-4">
+            <div className="grid grid-cols-3 md:w-auto md:inline-grid gap-6 mt-6 bg-muted/30 backdrop-blur-sm rounded-xl p-4">
               <div className="text-center">
                 <p className="text-2xl font-display font-bold">{ownedNFTs.length}</p>
                 <p className="text-sm text-muted-foreground">Items</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-display font-bold">{creator?.followers || 0}</p>
-                <p className="text-sm text-muted-foreground">Followers</p>
+              <div 
+                className="text-center cursor-pointer transition-all rounded-lg p-2 hover:bg-muted/60 hover:shadow-sm hover:scale-105 group" 
+                onClick={handleOpenFollowers}
+              >
+                <p className="text-2xl font-display font-bold group-hover:text-primary">
+                  {typeof creator?.followersCount === 'number' 
+                    ? creator.followersCount 
+                    : Array.isArray(creator?.followers) 
+                      ? creator.followers.length 
+                      : followersCount}
+                </p>
+                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                  Followers 
+                  <Users className="h-3 w-3 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
+                </p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-display font-bold">{creator?.following || 0}</p>
-                <p className="text-sm text-muted-foreground">Following</p>
+              <div 
+                className="text-center cursor-pointer transition-all rounded-lg p-2 hover:bg-muted/60 hover:shadow-sm hover:scale-105 group" 
+                onClick={handleOpenFollowing}
+              >
+                <p className="text-2xl font-display font-bold group-hover:text-primary">
+                  {typeof creator?.followingCount === 'number' 
+                    ? creator.followingCount 
+                    : Array.isArray(creator?.following) 
+                      ? creator.following.length 
+                      : followingCount}
+                </p>
+                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                  Following
+                  <Users className="h-3 w-3 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
+                </p>
               </div>
             </div>
 
@@ -533,7 +947,7 @@ export default function Profile() {
                 <DialogHeader>
                   <DialogTitle>Edit Profile</DialogTitle>
                   <DialogDescription>
-                    Make changes to your profile information.
+                    Update your profile information to share with the world.
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -544,20 +958,24 @@ export default function Profile() {
                     </Label>
                     <Input
                       id="username"
+                      placeholder="Enter a username"
                       value={editUsernameValue}
                       onChange={(e) => setEditUsernameValue(e.target.value)}
                       className="col-span-3"
                     />
                   </div>
+                  
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="bio" className="text-right">
                       Bio
                     </Label>
                     <Textarea
                       id="bio"
+                      placeholder="Tell the world about yourself..."
                       value={editBioValue}
                       onChange={(e) => setEditBioValue(e.target.value)}
                       className="col-span-3"
+                      rows={4}
                     />
                   </div>
                 </div>
@@ -567,7 +985,7 @@ export default function Profile() {
                     Cancel
                   </Button>
                   <Button onClick={handleUpdateProfile}>
-                    Save Changes
+                    Update Profile
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -575,40 +993,80 @@ export default function Profile() {
             
             {/* Edit Banner Dialog */}
             <Dialog open={editBannerOpen} onOpenChange={setEditBannerOpen}>
-              <DialogContent>
+              <DialogContent className="max-w-3xl">
                 <DialogHeader>
                   <DialogTitle>Edit Banner</DialogTitle>
                   <DialogDescription>
-                    Update your profile banner.
+                    Select one of your NFTs or enter an image URL.
                   </DialogDescription>
                 </DialogHeader>
                 
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="bannerURL" className="text-right">
-                      Image URL
-                    </Label>
-                    <Input
-                      id="bannerURL"
-                      placeholder="https://example.com/banner.jpg"
-                      value={bannerURL}
-                      onChange={(e) => setBannerURL(e.target.value)}
-                      className="col-span-3"
-                    />
-                  </div>
-                  {bannerURL && (
-                    <div className="mt-2 rounded-md overflow-hidden">
-                      <img 
-                        src={bannerURL} 
-                        alt="Banner Preview" 
-                        className="w-full h-32 object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1200x400?text=Invalid+Image+URL';
-                        }}
-                      />
+                <Tabs defaultValue="nfts">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="nfts">Select NFT</TabsTrigger>
+                    <TabsTrigger value="url">Enter URL</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="nfts" className="py-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-2">
+                      {ownedNFTs.length > 0 ? (
+                        ownedNFTs.map((nft) => (
+                          <div 
+                            key={nft._id} 
+                            className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all cursor-pointer ${
+                              bannerURL === nft.image ? 'border-primary' : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => setBannerURL(nft.image)}
+                          >
+                            <img 
+                              src={nft.image} 
+                              alt={nft.title} 
+                              className="w-full h-full object-cover"
+                            />
+                            {bannerURL === nft.image && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <CheckCircle2 className="h-6 w-6 text-primary" />
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-3 py-8 text-center text-muted-foreground">
+                          You don't own any NFTs yet. Purchase some NFTs first or use an image URL.
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="url" className="py-4">
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="bannerURL" className="text-right">
+                          Image URL
+                        </Label>
+                        <Input
+                          id="bannerURL"
+                          placeholder="https://example.com/banner.jpg"
+                          value={bannerURL}
+                          onChange={(e) => setBannerURL(e.target.value)}
+                          className="col-span-3"
+                        />
+                      </div>
+                      {bannerURL && (
+                        <div className="mt-2 rounded-md overflow-hidden">
+                          <img 
+                            src={bannerURL} 
+                            alt="Banner Preview" 
+                            className="w-full h-32 object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1200x400?text=Invalid+Image+URL';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
                 
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditBannerOpen(false)}>
@@ -623,40 +1081,80 @@ export default function Profile() {
             
             {/* Edit Profile Image Dialog */}
             <Dialog open={editProfileImageOpen} onOpenChange={setEditProfileImageOpen}>
-              <DialogContent>
+              <DialogContent className="max-w-3xl">
                 <DialogHeader>
                   <DialogTitle>Edit Profile Image</DialogTitle>
                   <DialogDescription>
-                    Update your profile image.
+                    Select one of your NFTs or enter an image URL.
                   </DialogDescription>
                 </DialogHeader>
                 
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="profileImageURL" className="text-right">
-                      Image URL
-                    </Label>
-                    <Input
-                      id="profileImageURL"
-                      placeholder="https://example.com/profile.jpg"
-                      value={profileImageURL}
-                      onChange={(e) => setProfileImageURL(e.target.value)}
-                      className="col-span-3"
-                    />
-                  </div>
-                  {profileImageURL && (
-                    <div className="mt-2 flex justify-center">
-                      <img 
-                        src={profileImageURL} 
-                        alt="Profile Preview" 
-                        className="w-32 h-32 rounded-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=Invalid+Image+URL';
-                        }}
-                      />
+                <Tabs defaultValue="nfts">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="nfts">Select NFT</TabsTrigger>
+                    <TabsTrigger value="url">Enter URL</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="nfts" className="py-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-2">
+                      {ownedNFTs.length > 0 ? (
+                        ownedNFTs.map((nft) => (
+                          <div 
+                            key={nft._id} 
+                            className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all cursor-pointer ${
+                              profileImageURL === nft.image ? 'border-primary' : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => setProfileImageURL(nft.image)}
+                          >
+                            <img 
+                              src={nft.image} 
+                              alt={nft.title} 
+                              className="w-full h-full object-cover"
+                            />
+                            {profileImageURL === nft.image && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <CheckCircle2 className="h-6 w-6 text-primary" />
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-3 py-8 text-center text-muted-foreground">
+                          You don't own any NFTs yet. Purchase some NFTs first or use an image URL.
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="url" className="py-4">
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="profileImageURL" className="text-right">
+                          Image URL
+                        </Label>
+                        <Input
+                          id="profileImageURL"
+                          placeholder="https://example.com/profile.jpg"
+                          value={profileImageURL}
+                          onChange={(e) => setProfileImageURL(e.target.value)}
+                          className="col-span-3"
+                        />
+                      </div>
+                      {profileImageURL && (
+                        <div className="mt-2 flex justify-center">
+                          <img 
+                            src={profileImageURL} 
+                            alt="Profile Preview" 
+                            className="w-32 h-32 rounded-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=Invalid+Image+URL';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
                 
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditProfileImageOpen(false)}>
@@ -847,6 +1345,144 @@ export default function Profile() {
           </Tabs>
         </div>
       </main>
+
+      {/* Followers Dialog */}
+      <Dialog open={followersOpen} onOpenChange={setFollowersOpen}>
+        <DialogContent className="max-w-md md:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Followers {followersList.length > 0 && <span className="ml-2 text-muted-foreground">({followersList.length})</span>}</span>
+            </DialogTitle>
+            <DialogDescription>
+              People who follow this profile
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingFollowers ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : followersList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Users className="h-12 w-12 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">No followers yet</p>
+              {account === profileAddress && (
+                <p className="text-sm text-muted-foreground mt-1">Share your profile to get more followers</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {followersList.map((follower) => (
+                <div key={follower.address} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-md transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border border-muted">
+                      <AvatarImage 
+                        src={follower.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${follower.address}`} 
+                        alt={follower.username || formatAddress(follower.address)} 
+                      />
+                      <AvatarFallback>{follower.address.substring(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{follower.username || formatAddress(follower.address)}</p>
+                      <p className="text-xs text-muted-foreground">{formatAddress(follower.address)}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {account && follower.address !== account && (
+                      <Button 
+                        variant={follower.isFollowing ? "outline" : "default"}
+                        size="sm" 
+                        onClick={() => handleFollowFromList(follower.address, follower.isFollowing, true)}
+                        className={follower.isFollowing ? "border-primary text-primary hover:bg-primary/10" : ""}
+                      >
+                        {follower.isFollowing ? "Following" : "Follow"}
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      asChild
+                    >
+                      <Link to={`/profile/${follower.address}`} onClick={() => setFollowersOpen(false)}>
+                        View
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Following Dialog */}
+      <Dialog open={followingOpen} onOpenChange={setFollowingOpen}>
+        <DialogContent className="max-w-md md:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Following {followingList.length > 0 && <span className="ml-2 text-muted-foreground">({followingList.length})</span>}</span>
+            </DialogTitle>
+            <DialogDescription>
+              People this profile follows
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingFollowing ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : followingList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Users className="h-12 w-12 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">Not following anyone yet</p>
+              {account === profileAddress && (
+                <p className="text-sm text-muted-foreground mt-1">Discover creators to follow</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {followingList.map((following) => (
+                <div key={following.address} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-md transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border border-muted">
+                      <AvatarImage 
+                        src={following.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${following.address}`} 
+                        alt={following.username || formatAddress(following.address)} 
+                      />
+                      <AvatarFallback>{following.address.substring(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{following.username || formatAddress(following.address)}</p>
+                      <p className="text-xs text-muted-foreground">{formatAddress(following.address)}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {account && following.address !== account && (
+                      <Button 
+                        variant="outline"
+                        size="sm" 
+                        onClick={() => handleFollowFromList(following.address, true, false)}
+                        className="border-primary text-primary hover:bg-primary/10"
+                      >
+                        Following
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      asChild
+                    >
+                      <Link to={`/profile/${following.address}`} onClick={() => setFollowingOpen(false)}>
+                        View
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

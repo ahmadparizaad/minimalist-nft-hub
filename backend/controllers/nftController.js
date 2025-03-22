@@ -161,7 +161,6 @@ exports.createNFT = async (req, res) => {
       tokenId,
       title,
       description,
-      image,
       price,
       owner,
       creator,
@@ -172,7 +171,6 @@ exports.createNFT = async (req, res) => {
       tokenStandard,
       attributes,
       ipfsHash,
-      metadataURI,
       collectionId,
       utilityPercent
     } = req.body;
@@ -191,7 +189,6 @@ exports.createNFT = async (req, res) => {
       tokenId,
       title,
       description,
-      image,
       price,
       currency: 'USDC',
       owner,
@@ -203,7 +200,6 @@ exports.createNFT = async (req, res) => {
       tokenStandard,
       attributes,
       ipfsHash,
-      metadataURI,
       collectionId,
       utilityPercent,
       createdAt: new Date()

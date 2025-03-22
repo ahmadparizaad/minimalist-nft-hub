@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { formatAddress, formatPrice, checkSufficientBalance, checkSufficientSFuel } from "@/utils/web3";
 import { toast } from "sonner";
 import { useWeb3 } from "@/context/Web3Context";
-import { NFT, Transaction } from "@/types";
+import { NFT, Transaction, Creator } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,8 @@ import { motion } from "framer-motion";
 import { Clock, ArrowRight, Tag, Repeat, Shield, Info, ExternalLink, Share2, User, Image } from "lucide-react";
 import { contractAddress } from "@/context/secret_final";
 import { nftAPI, userAPI } from "@/api/apiService";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function NFTDetail() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +27,8 @@ export default function NFTDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [creatorProfile, setCreatorProfile] = useState<Creator | null>(null);
+  const [ownerProfile, setOwnerProfile] = useState<Creator | null>(null);
   
   useEffect(() => {
     const fetchNFTData = async () => {
@@ -39,6 +43,26 @@ export default function NFTDetail() {
           setNft(nftDetails);
           
           setIsOwner(isConnected && account?.toLowerCase() === nftDetails.owner?.toLowerCase());
+          
+          // Fetch creator profile
+          try {
+            const creatorResponse = await userAPI.getUserByAddress(nftDetails.creator);
+            if (creatorResponse && creatorResponse.data) {
+              setCreatorProfile(creatorResponse.data);
+            }
+          } catch (error) {
+            console.error("Error fetching creator profile:", error);
+          }
+          
+          // Fetch owner profile
+          try {
+            const ownerResponse = await userAPI.getUserByAddress(nftDetails.owner);
+            if (ownerResponse && ownerResponse.data) {
+              setOwnerProfile(ownerResponse.data);
+            }
+          } catch (error) {
+            console.error("Error fetching owner profile:", error);
+          }
           
           if (nftDetails.tokenId) {
             console.log(nftDetails.tokenId)
@@ -305,9 +329,9 @@ export default function NFTDetail() {
               className="lg:w-1/2"
             >
               <div className="flex items-center gap-4 mb-3">
-                <Badge variant="outline" className={nft.isListed ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
+                {/* <Badge variant="outline" className={nft.isListed ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
                   {nft.isListed ? "Listed" : "Not Listed"}
-                </Badge>
+                </Badge> */}
                 <Badge variant="secondary">{nft.category}</Badge>
                 <Badge variant="secondary">{nft.tokenStandard}</Badge>
               </div>
@@ -315,13 +339,53 @@ export default function NFTDetail() {
               <h1 className="text-3xl font-display font-bold mb-3">{nft.title}</h1>
               
               <div className="flex items-center gap-6 mb-6">
-                <div>
-                  <p className="text-sm text-muted-foreground">Creator</p>
-                  <p className="font-medium">{formatAddress(nft.creator)}</p>
+                <div className="flex flex-col">
+                  <p className="text-sm text-muted-foreground mb-1">Creator</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{formatAddress(nft.creator)}</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link to={`/profile/${nft.creator}`}>
+                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                              <AvatarImage 
+                                src={creatorProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.creator}`} 
+                                alt={`${formatAddress(nft.creator)} profile`} 
+                              />
+                              <AvatarFallback>{nft.creator?.substring(0, 2)}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View Creator Profile</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Owner</p>
-                  <p className="font-medium">{formatAddress(nft.owner)}</p>
+                <div className="flex flex-col">
+                  <p className="text-sm text-muted-foreground mb-1">Owner</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{formatAddress(nft.owner)}</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link to={`/profile/${nft.owner}`}>
+                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                              <AvatarImage 
+                                src={ownerProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.owner}`} 
+                                alt={`${formatAddress(nft.owner)} profile`} 
+                              />
+                              <AvatarFallback>{nft.owner?.substring(0, 2)}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View Owner Profile</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
               </div>
               
@@ -351,8 +415,7 @@ export default function NFTDetail() {
                               
                               await nftAPI.updateNFT(nft.tokenId, {
                                 isListed: false,
-                                owner: nft.owner,
-                                address: account
+                                owner: nft.owner
                               });
                               
                               // Refresh NFT data

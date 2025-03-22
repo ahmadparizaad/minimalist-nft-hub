@@ -107,7 +107,7 @@ export function NFTCard({ nft, index = 0 }: NFTCardProps) {
             </div>
 
             {!nftData.isListed && (
-              <div className="absolute top-2 right-2">
+              <div className="absolute bottom-2 right-2">
                 <span className="px-2 py-1 text-xs rounded-full bg-red-500/80 text-white backdrop-blur-sm">
                   Not Listed
                 </span>

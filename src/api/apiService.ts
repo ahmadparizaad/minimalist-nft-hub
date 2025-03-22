@@ -153,6 +153,74 @@ export const userAPI = {
   getUserStats: async (address: string) => {
     const response = await api.get(`/users/stats/${address}`);
     return response.data;
+  },
+  
+  getTopTraders: async (limit = 6) => {
+    try {
+      console.log(`Fetching top traders, limit: ${limit}`);
+      const response = await api.get(`/users/top-traders?limit=${limit}`);
+      
+      if (!response.data || !response.data.success) {
+        console.warn('Top traders API response was not successful:', response.data);
+        return { success: false, data: [] };
+      }
+      
+      if (!response.data.data || !Array.isArray(response.data.data)) {
+        console.warn('Top traders API returned invalid data format:', response.data);
+        return { success: true, data: [] };
+      }
+      
+      console.log(`Received ${response.data.data.length} top traders from API`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching top traders:", error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      // Return empty array for consistent handling
+      return { success: false, data: [] };
+    }
+  },
+  
+  followUser: async (followerAddress: string, followingAddress: string) => {
+    try {
+      console.log(`User ${followerAddress} following ${followingAddress}`);
+      const response = await api.post(`/users/follow`, {
+        followerAddress,
+        followingAddress
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error following user:", error);
+      return { success: false, message: "Failed to follow user" };
+    }
+  },
+  
+  unfollowUser: async (followerAddress: string, followingAddress: string) => {
+    try {
+      console.log(`User ${followerAddress} unfollowing ${followingAddress}`);
+      const response = await api.post(`/users/unfollow`, {
+        followerAddress,
+        followingAddress
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+      return { success: false, message: "Failed to unfollow user" };
+    }
+  },
+  
+  getFollowStatus: async (followerAddress: string, followingAddress: string) => {
+    try {
+      const response = await api.get(`/users/follow-status`, {
+        params: { followerAddress, followingAddress }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error getting follow status:", error);
+      return { isFollowing: false, success: false };
+    }
   }
 };
 

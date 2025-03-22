@@ -4,17 +4,21 @@ import { Footer } from "@/components/Footer";
 import { FeaturedNFT } from "@/components/FeaturedNFT";
 import { NFTCard } from "@/components/NFTCard";
 import { CollectionCard } from "@/components/CollectionCard";
-import { mockNFTs, mockCollections, generateMockNFTs, generateMockCollections } from "@/utils/ipfs";
-import { NFT, Collection } from "@/types";
+import { TopTraders } from "@/components/TopTraders";
+import { mockNFTs, mockCollections, generateMockNFTs, generateMockCollections, generateMockCreators } from "@/utils/ipfs";
+import { NFT, Collection, Creator } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { nftAPI } from "@/api/apiService";
+import { nftAPI, userAPI } from "@/api/apiService";
+import Particles from "@/components/ui/particles";
+import Waves from "@/components/ui/waves";
 
 export default function Index() {
   const [featuredNFT, setFeaturedNFT] = useState<NFT | null>(null);
   const [trendingNFTs, setTrendingNFTs] = useState<NFT[]>([]);
   const [topCollections, setTopCollections] = useState<Collection[]>([]);
+  const [topTraders, setTopTraders] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +38,15 @@ export default function Index() {
           console.log('Using mock trending NFTs');
         }
         
+        // Fetch top traders from the database
+        const tradersResponse = await userAPI.getTopTraders(6);
+        let tradersData: Creator[] = [];
+        
+        if (tradersResponse.success && tradersResponse.data && tradersResponse.data.length > 0) {
+          tradersData = tradersResponse.data;
+          console.log('Using real top traders from database');
+        }
+        
         // Generate collections data (mock for now)
         const collections = generateMockCollections(4);
         
@@ -51,12 +64,15 @@ export default function Index() {
         
         setTrendingNFTs(trendingData);
         setTopCollections(collections);
+        setTopTraders(tradersData);
       } catch (error) {
         console.error("Error fetching data:", error);
-        // Use mock data as fallback in case of error
+        // Use mock data as fallback in case of error for NFTs and collections
         const mockData = generateMockNFTs(8);
+        
         setFeaturedNFT(mockData[0]);
         setTrendingNFTs(mockData.slice(1, 5));
+        // We don't use mock data for traders anymore
       } finally {
         setIsLoading(false);
       }
@@ -70,6 +86,19 @@ export default function Index() {
       <Navbar />
       
       <main className="flex-1 pt-20">
+      <Waves
+  lineColor="#DCECFC"
+  backgroundColor="rgba(255, 255, 255, 0.2)"
+  waveSpeedX={0.02}
+  waveSpeedY={0.01}
+  waveAmpX={40}
+  waveAmpY={20}
+  friction={0.9}
+  tension={0.01}
+  maxCursorMove={120}
+  xGap={12}
+  yGap={36}
+/>
         {/* Hero Section */}
         <section className="pt-12 pb-24 px-4">
           <div className="container mx-auto max-w-6xl">
@@ -80,14 +109,13 @@ export default function Index() {
               className="text-center mb-16"
             >
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold mb-6 tracking-tight">
-                Discover, Collect, and Sell
+                Trade, Earn and Own
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/70">
-                  Extraordinary NFTs
+                  with Confidence
                 </span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Ethereal is the premier marketplace for NFTs, which are digital items you can truly own. 
-                Digital artwork, collectibles, and more.
+                NapFT redefines NFTs with real-world asset backing, dynamic pricing, and a gas free transaction for seamless trading experience.
               </p>
               
               <div className="mt-8 flex justify-center gap-4">
@@ -116,6 +144,24 @@ export default function Index() {
           </div>
         </section>
         
+        {/* Top Traders Section */}
+        <section className="py-16 px-4 bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="container mx-auto max-w-6xl">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-display font-bold">
+                Top Traders
+              </h2>
+              <Button asChild variant="outline">
+                <Link to="/marketplace">
+                  View All
+                </Link>
+              </Button>
+            </div>
+            
+            <TopTraders traders={topTraders} isLoading={isLoading} />
+          </div>
+        </section>
+        
         {/* Trending NFTs Section */}
         <section className="py-16 px-4 bg-muted/30">
           <div className="container mx-auto max-w-6xl">
@@ -124,7 +170,7 @@ export default function Index() {
                 Trending NFTs
               </h2>
               <Button asChild variant="outline">
-                <Link to="/marketplace">
+                <Link to="/trending">
                   View All
                 </Link>
               </Button>
@@ -144,7 +190,7 @@ export default function Index() {
         </section>
         
         {/* Top Collections Section */}
-        <section className="py-16 px-4">
+        {/* <section className="py-16 px-4">
           <div className="container mx-auto max-w-6xl">
             <div className="flex justify-between items-center mb-12">
               <h2 className="text-2xl md:text-3xl font-display font-bold">
@@ -168,7 +214,7 @@ export default function Index() {
               }
             </div>
           </div>
-        </section>
+        </section> */}
         
         {/* Call to Action Section */}
         <section className="py-24 px-4 bg-gradient-to-r from-primary/10 to-primary/5">
