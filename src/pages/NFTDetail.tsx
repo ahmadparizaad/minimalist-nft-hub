@@ -265,6 +265,35 @@ export default function NFTDetail() {
     );
   }
 
+  function formatTimeAgo(timestamp: string): string {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    const weeks = Math.floor(diff / 604800000);
+    const months = Math.floor(diff / 2628000000);
+    const years = Math.floor(diff / 31536000000);
+
+    if (years > 0) {
+      return `${years} year${years > 1 ? 's' : ''} ago`;
+    } else if (months > 0) {
+      return `${months} month${months > 1 ? 's' : ''} ago`;
+    } else if (weeks > 0) {
+      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else if (days > 0) {
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (minutes > 0) {
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else {
+      return 'just now';
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -286,6 +315,9 @@ export default function NFTDetail() {
                 />
                 
                 <div className="absolute top-4 left-4 flex gap-2">
+                  <div>
+                    <img src="/skale-logo.svg" alt="SKALE" className="h-7 w-7" />
+                  </div>
                   <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-sm border-none">
                     {nft.tokenStandard}
                   </Badge>
@@ -408,45 +440,45 @@ export default function NFTDetail() {
                       {isOwner ? (
                         <Button 
                           variant="outline" 
-                          className="border-red-500 text-red-500 hover:bg-red-500/10"
-                          onClick={async () => {
-                            try {
-                              toast.loading("Unlisting NFT...");
+                          className="border-green-500 text-green-500 hover:bg-green-500/10"
+                          // onClick={async () => {
+                          //   try {
+                          //     toast.loading("Unlisting NFT...");
                               
-                              await nftAPI.updateNFT(nft.tokenId, {
-                                isListed: false,
-                                owner: nft.owner
-                              });
+                          //     await nftAPI.updateNFT(nft.tokenId, {
+                          //       isListed: false,
+                          //       owner: nft.owner
+                          //     });
                               
-                              // Refresh NFT data
-                              const updatedNftResponse = await nftAPI.getNFTById(id || "");
-                              setNft(updatedNftResponse.data);
+                          //     // Refresh NFT data
+                          //     const updatedNftResponse = await nftAPI.getNFTById(id || "");
+                          //     setNft(updatedNftResponse.data);
                               
-                              // Add transaction to history
-                              const newTransaction: Transaction = {
-                                id: `tx-${Date.now()}`,
-                                type: 'unlist',
-                                nftId: nft._id,
-                                from: nft.owner,
-                                to: nft.owner,
-                                price: nft.price,
-                                currency: nft.currency,
-                                timestamp: new Date().toISOString(),
-                                txHash: `0x${Math.random().toString(16).slice(2, 66)}`
-                              };
+                          //     // Add transaction to history
+                          //     const newTransaction: Transaction = {
+                          //       id: `tx-${Date.now()}`,
+                          //       type: 'unlist',
+                          //       nftId: nft._id,
+                          //       from: nft.owner,
+                          //       to: nft.owner,
+                          //       price: nft.price,
+                          //       currency: nft.currency,
+                          //       timestamp: new Date().toISOString(),
+                          //       txHash: `0x${Math.random().toString(16).slice(2, 66)}`
+                          //     };
                               
-                              setTransactions([newTransaction, ...transactions]);
+                          //     setTransactions([newTransaction, ...transactions]);
                               
-                              toast.dismiss();
-                              toast.success("NFT unlisted successfully");
-                            } catch (error) {
-                              console.error("Error unlisting NFT:", error);
-                              toast.dismiss();
-                              toast.error("Failed to unlist NFT");
-                            }
-                          }}
+                          //     toast.dismiss();
+                          //     toast.success("NFT unlisted successfully");
+                          //   } catch (error) {
+                          //     console.error("Error unlisting NFT:", error);
+                          //     toast.dismiss();
+                          //     toast.error("Failed to unlist NFT");
+                          //   }
+                          // }}
                         >
-                          Unlist
+                          You own this NFT
                         </Button>
                       ) : (
                         <Button
@@ -475,14 +507,14 @@ export default function NFTDetail() {
                 </Card>
               )}
               
-              <Tabs defaultValue="attributes" className="w-full">
+              <Tabs defaultValue="history" className="w-full">
                 <TabsList className="w-full">
-                  <TabsTrigger value="attributes" className="flex-1">Attributes</TabsTrigger>
+                  {/* <TabsTrigger value="attributes" className="flex-1">Attributes</TabsTrigger> */}
                   <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
                   <TabsTrigger value="details" className="flex-1">Details</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="attributes" className="mt-4">
+                {/* <TabsContent value="attributes" className="mt-4">
                   {nft.attributes && nft.attributes.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {nft.attributes.map((attr, index) => (
@@ -497,7 +529,7 @@ export default function NFTDetail() {
                       <p>No attributes</p>
                     </div>
                   )}
-                </TabsContent>
+                </TabsContent> */}
                 
                 <TabsContent value="history" className="mt-4">
                   <div className="space-y-4">
@@ -515,7 +547,7 @@ export default function NFTDetail() {
                             <div className="flex justify-between">
                               <p className="font-medium capitalize">{tx.type}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(tx.timestamp).toLocaleDateString()}
+                                {formatTimeAgo(tx.timestamp)}
                               </p>
                             </div>
                             <div className="flex justify-between items-center mt-1">

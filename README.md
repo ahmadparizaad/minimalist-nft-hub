@@ -1,4 +1,93 @@
-# Welcome to your Lovable project
+# Minimalist NFT Hub
+
+A modern, clean, and minimalist NFT marketplace built with React, TypeScript, and Tailwind CSS.
+
+## Features
+
+- Browse NFT collections
+- Create and mint NFTs
+- Buy and sell NFTs
+- User profiles
+- Wallet integration
+- Clean and modern UI
+
+## Environment Setup
+
+This project uses different environment configurations for development and production:
+
+- Development: Connects to a local backend at `http://localhost:5000/api`
+- Production: Connects to the deployed backend at `https://napft-backend.onrender.com/api`
+
+### Environment Files
+
+- `.env.development`: Contains development environment variables
+- `.env.production`: Contains production environment variables
+- `.env`: Default fallback environment variables
+
+## Development
+
+To start the development server:
+
+```bash
+npm install
+npm run dev
+```
+
+This will use the development environment variables.
+
+## Production
+
+To build for production:
+
+```bash
+npm run build
+```
+
+This will use the production environment variables, including connecting to the deployed backend.
+
+## Deployment
+
+### Backend
+The backend is deployed at:
+- https://napft-backend.onrender.com
+
+### Frontend
+The frontend is deployed on Hostinger:
+
+1. Build the project:
+```bash
+npm run build
+```
+
+2. Upload the contents of the `dist` folder to your Hostinger hosting account:
+   - Log in to your Hostinger control panel
+   - Navigate to File Manager
+   - Upload the entire contents of the `dist` directory to your public_html folder
+
+3. Important files to verify:
+   - `.htaccess` - Ensures that all routes are properly handled for the SPA
+   - `index.html` - The entry point for your application
+   - All assets in the `assets` directory
+
+#### Troubleshooting Hostinger Deployment
+If you encounter issues with routing or API calls:
+
+1. Verify that the `.htaccess` file was properly uploaded and is working
+2. Check browser console for any CORS errors
+3. Make sure your backend on Render is properly configured to accept requests from your Hostinger domain
+4. If needed, add your Hostinger domain to the CORS allowed origins in your Express backend:
+
+```javascript
+// In your backend server.js or app.js
+app.use(cors({
+  origin: ['https://your-hostinger-domain.com', 'http://localhost:8080'],
+  credentials: true
+}));
+```
+
+## License
+
+MIT
 
 ## Project info
 

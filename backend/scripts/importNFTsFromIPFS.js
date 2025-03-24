@@ -52,7 +52,7 @@ async function fetchMetadataFromIPFS(ipfsHash) {
         console.log(`Trying to fetch metadata from: ${gateway}`);
         const response = await axios.get(gateway, options);
         console.log(`Successfully fetched metadata from: ${gateway}`);
-        return response.data;
+    return response.data;
       } catch (error) {
         console.log(`Failed to fetch from gateway ${gateway}: ${error.message}`);
         continue;
@@ -262,20 +262,20 @@ async function processNFTMetadata(tokenId, metadataURI, creator, owner, price, r
     // Save NFT to database
     await nft.save();
     console.log(`✅ Saved NFT with token ID ${tokenId} to database`);
-    
-    // Create mint transaction
+      
+      // Create mint transaction
     const transaction = new Transaction({
-      type: 'mint',
-      nftId: nft._id,
-      tokenId: nft.tokenId,
+        type: 'mint',
+        nftId: nft._id,
+        tokenId: nft.tokenId,
       from: '0x0000000000000000000000000000000000000000', // Zero address
-      to: nft.creator,
-      price: 0,
+        to: nft.creator,
+        price: 0,
       currency: paymentToken === '0x0000000000000000000000000000000000000000' ? 'ETH' : 'USDC',
       txHash: `0x${Math.random().toString(16).slice(2, 66)}`, // Mock tx hash
-      timestamp: nft.createdAt
-    });
-    
+        timestamp: nft.createdAt
+      });
+      
     await transaction.save();
     console.log(`Created mint transaction for token ID ${tokenId}`);
     

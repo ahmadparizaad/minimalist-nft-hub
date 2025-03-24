@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { nftAPI, userAPI } from "@/api/apiService";
-import Particles from "@/components/ui/particles";
 import Waves from "@/components/ui/waves";
+import { Search } from "lucide-react";
 
 export default function Index() {
   const [featuredNFT, setFeaturedNFT] = useState<NFT | null>(null);
@@ -138,6 +138,13 @@ export default function Index() {
                 </Button>
               </div>
             </motion.div>
+
+            {/* <Search className="absolute mb-5 left-3 h-4 w-4 text-muted-foreground" />
+            <input 
+              type="text" 
+              placeholder="Search NFTs..."
+              className="w-full py-2 pl-10 pr-4 rounded-full bg-secondary/50 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+            /> */}
             
             {/* Featured NFT */}
             {featuredNFT && <FeaturedNFT nft={featuredNFT} />}

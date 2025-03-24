@@ -120,14 +120,17 @@ export function NFTCard({ nft, index = 0 }: NFTCardProps) {
               <h3 className="font-display font-medium text-foreground/90 line-clamp-1">
                 {nftData.title || "Untitled NFT"}
               </h3>
-              <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
+              {/* <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
                 #{nftData.tokenId}
-              </span>
+              </span> */}
+              <div>
+                <img src="/skale-logo.svg" alt="SKALE" className="h-6 w-6" />
+              </div>
             </div>
 
-            <p className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1">
+            {/* <p className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1">
               {nftData.description || "No description available."}
-            </p>
+            </p> */}
 
             <div className="mt-auto pt-3 border-t border-border/40 flex justify-between items-center">
               <div className="text-sm">

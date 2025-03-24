@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { contractAddress, abi } from './secret_final';
 import { nftAPI } from '@/api/apiService';
+import { checkSufficientSFuel } from "@/utils/web3";
 
 // Initial state
 const initialState: Web3State = {
@@ -259,6 +260,12 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const sFuelBalance = parseFloat(
         ethers.utils.formatEther(await browserProvider.getBalance(accountAddress))
       );
+
+      if (!checkSufficientSFuel(sFuelBalance)) {
+        toast.error("Insufficient sFuel for transaction");
+        requestSFuel();
+        return;
+      }
       
       // Get USDC balance
       const usdcContract = new ethers.Contract(

@@ -1210,7 +1210,7 @@ export default function Profile() {
                                   className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Update NFT
+                                  Edit NFT
                                 </Link>
                                 <button 
                                   onClick={() => setAsProfileImage(nft.image)}
@@ -1243,7 +1243,7 @@ export default function Profile() {
 
             <TabsContent value="created" className="mt-6">
               {createdNFTs.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                   {createdNFTs.map((nft, index) => (
                     <div key={nft._id} className="relative">
                       <NFTCard key={nft._id} nft={nft} index={index} />
@@ -1260,7 +1260,7 @@ export default function Profile() {
                                   className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Update NFT
+                                  Edit NFT
                                 </Link>
                               </div>
                             </div>

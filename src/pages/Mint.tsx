@@ -331,8 +331,8 @@ export default function Mint() {
                           <SelectItem value="Art">Art</SelectItem>
                           <SelectItem value="Collectible">Collectible</SelectItem>
                           <SelectItem value="Photography">Photography</SelectItem>
-                          <SelectItem value="Music">Music</SelectItem>
-                          <SelectItem value="Video">Video</SelectItem>
+                          {/* <SelectItem value="Music">Music</SelectItem>
+                          <SelectItem value="Video">Video</SelectItem> */}
                         </SelectContent>
                       </Select>
                     </div>
@@ -378,7 +378,7 @@ export default function Mint() {
                 </CardContent>
               </Card>
               
-              <Card className="mt-4">
+              {/* <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>Attributes</CardTitle>
                 </CardHeader>
@@ -422,7 +422,7 @@ export default function Mint() {
                     Add Attribute
                   </Button>
                 </CardContent>
-              </Card>
+              </Card> */}
             </motion.div>
           </div>
           
