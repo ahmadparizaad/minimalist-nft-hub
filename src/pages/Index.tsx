@@ -28,7 +28,7 @@ export default function Index() {
         // Fetch trending NFTs from API
         const trendingResponse = await nftAPI.getTrendingNFTs(4);
         let trendingData: NFT[] = [];
-        
+
         if (trendingResponse.success && trendingResponse.data && trendingResponse.data.length > 0) {
           trendingData = trendingResponse.data;
           console.log('Using real trending NFTs from API');
@@ -37,23 +37,23 @@ export default function Index() {
           trendingData = generateMockNFTs(4);
           console.log('Using mock trending NFTs');
         }
-        
+
         // Fetch top traders from the database
         const tradersResponse = await userAPI.getTopTraders(6);
         let tradersData: Creator[] = [];
-        
+
         if (tradersResponse.success && tradersResponse.data && tradersResponse.data.length > 0) {
           tradersData = tradersResponse.data;
           console.log('Using real top traders from database');
         }
-        
+
         // Generate collections data (mock for now)
         const collections = generateMockCollections(4);
-        
+
         // Fetch a real NFT from the API for the featured slot
         const response = await nftAPI.getNFTByTokenId(26);
         console.log('Featured NFT response:', response);
-        
+
         // Only set the featuredNFT if the API call was successful and the data exists
         if (response.success && response.data) {
           setFeaturedNFT(response.data);
@@ -61,7 +61,7 @@ export default function Index() {
           // Use the first trending NFT as a fallback for featured
           setFeaturedNFT(trendingData[0]);
         }
-        
+
         setTrendingNFTs(trendingData);
         setTopCollections(collections);
         setTopTraders(tradersData);
@@ -69,7 +69,7 @@ export default function Index() {
         console.error("Error fetching data:", error);
         // Use mock data as fallback in case of error for NFTs and collections
         const mockData = generateMockNFTs(8);
-        
+
         setFeaturedNFT(mockData[0]);
         setTrendingNFTs(mockData.slice(1, 5));
         // We don't use mock data for traders anymore
@@ -77,28 +77,28 @@ export default function Index() {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1 pt-20">
-      <Waves
-  lineColor="#DCECFC"
-  backgroundColor="rgba(255, 255, 255, 0.2)"
-  waveSpeedX={0.02}
-  waveSpeedY={0.01}
-  waveAmpX={40}
-  waveAmpY={20}
-  friction={0.9}
-  tension={0.01}
-  maxCursorMove={120}
-  xGap={12}
-  yGap={36}
-/>
+        <Waves
+          lineColor="#DCECFC"
+          backgroundColor="rgba(255, 255, 255, 0.2)"
+          waveSpeedX={0.02}
+          waveSpeedY={0.01}
+          waveAmpX={40}
+          waveAmpY={20}
+          friction={0.9}
+          tension={0.01}
+          maxCursorMove={120}
+          xGap={12}
+          yGap={36}
+        />
         {/* Hero Section */}
         <section className="pt-12 pb-24 px-4">
           <div className="container mx-auto max-w-6xl">
@@ -117,9 +117,9 @@ export default function Index() {
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 NapFT redefines NFTs with real-world asset backing, dynamic pricing, and a gas free transaction for seamless trading experience.
               </p>
-              
+
               <div className="mt-8 flex justify-center gap-4">
-                <Button 
+                <Button
                   asChild
                   className="bg-primary hover:bg-primary/90 text-white rounded-xl h-12 px-8"
                 >
@@ -127,9 +127,9 @@ export default function Index() {
                     Explore
                   </Link>
                 </Button>
-                <Button 
+                <Button
                   asChild
-                  variant="outline" 
+                  variant="outline"
                   className="border-primary text-primary hover:bg-primary/10 rounded-xl h-12 px-8"
                 >
                   <Link to="/mint">
@@ -138,12 +138,12 @@ export default function Index() {
                 </Button>
               </div>
             </motion.div>
-            
+
             {/* Featured NFT */}
             {featuredNFT && <FeaturedNFT nft={featuredNFT} />}
           </div>
         </section>
-        
+
         {/* Top Traders Section */}
         <section className="py-16 px-4 bg-gradient-to-r from-primary/5 to-primary/10">
           <div className="container mx-auto max-w-6xl">
@@ -157,11 +157,11 @@ export default function Index() {
                 </Link>
               </Button>
             </div>
-            
+
             <TopTraders traders={topTraders} isLoading={isLoading} />
           </div>
         </section>
-        
+
         {/* Trending NFTs Section */}
         <section className="py-16 px-4 bg-muted/30">
           <div className="container mx-auto max-w-6xl">
@@ -175,20 +175,20 @@ export default function Index() {
                 </Link>
               </Button>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {isLoading 
+              {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
-                  ))
+                  <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+                ))
                 : trendingNFTs.slice(0, 4).map((nft, index) => (
-                    <NFTCard key={nft._id} nft={nft} index={index} />
-                  ))
+                  <NFTCard key={nft._id} nft={nft} index={index} />
+                ))
               }
             </div>
           </div>
         </section>
-        
+
         {/* Top Collections Section */}
         {/* <section className="py-16 px-4">
           <div className="container mx-auto max-w-6xl">
@@ -215,7 +215,7 @@ export default function Index() {
             </div>
           </div>
         </section> */}
-        
+
         {/* Call to Action Section */}
         <section className="py-24 px-4 bg-gradient-to-r from-primary/10 to-primary/5">
           <div className="container mx-auto max-w-6xl text-center">
@@ -229,10 +229,10 @@ export default function Index() {
                 Create and Sell Your NFTs
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-                Join thousands of creators and collectors in the world's 
+                Join thousands of creators and collectors in the world's
                 most accessible and user-friendly NFT marketplace.
               </p>
-              <Button 
+              <Button
                 asChild
                 className="bg-primary hover:bg-primary/90 text-white rounded-xl h-12 px-8"
               >
@@ -244,7 +244,7 @@ export default function Index() {
           </div>
         </section>
       </main>
-      
+
       <Footer />
     </div>
   );

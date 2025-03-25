@@ -832,7 +832,7 @@ export default function Profile() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-white"
+                          className="h-8 w-8 p-0 text-black"
                           onClick={() => {
                             setEditUsernameValue(creator?.username || creator?.name || "");
                             setEditBioValue(creator?.bio || "");
@@ -1242,35 +1242,35 @@ export default function Profile() {
             </TabsContent>
 
             <TabsContent value="created" className="mt-6">
-              {createdNFTs.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {createdNFTs.map((nft, index) => (
-                    <div key={nft._id} className="relative">
-                      <NFTCard key={nft._id} nft={nft} index={index} />
-                      {isOwner && (
-                        <div className="absolute top-2 right-2">
-                          <div className="relative group">
-                            <Button variant="outline" size="icon" className="bg-black/50 text-white backdrop-blur-sm rounded-full border-none">
-                              <MoreHorizontal className="h-5 w-5" />
-                            </Button>
-                            <div className="absolute top-0 right-0 mt-8 w-48 bg-background border border-border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                              <div className="p-1">
-                                <Link
-                                  to={`/update-nft/${nft.tokenId}`}
-                                  className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
-                                >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Update NFT
-                                </Link>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+            {createdNFTs.length > 0 ? (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {createdNFTs.map((nft) => (
+        <div key={nft._id} className="relative">
+          <NFTCard key={nft._id} nft={nft} />
+          {isOwner && (
+            <div className="absolute top-2 right-2">
+              <div className="relative group">
+                <Button variant="outline" size="icon" className="bg-black/50 text-white backdrop-blur-sm rounded-full border-none">
+                  <MoreHorizontal className="h-5 w-5" />
+                </Button>
+                <div className="absolute top-0 right-0 mt-8 w-48 bg-background border border-border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                  <div className="p-1">
+                    <Link
+                      to={`/update-nft/${nft.tokenId}`}
+                      className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted rounded-md"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Update NFT
+                    </Link>
+                  </div>
                 </div>
-              ) : (
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  ) : (
                 <div className="text-center py-16 border border-dashed border-border rounded-xl">
                   <h3 className="text-xl font-display font-medium mb-2">No NFTs created yet</h3>
                   <p className="text-muted-foreground mb-6">
