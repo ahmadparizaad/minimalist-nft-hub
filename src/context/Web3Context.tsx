@@ -223,7 +223,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       if (!window.ethereum) {
         if (/Mobi|Android|Tablet|iPad|iPhone/i.test(navigator.userAgent)) {
           toast("Open MetaMask", {duration: 2000});
-          window.location.href = "https://metamask.app.link/dapp/your-dapp-url.com"; // Update with your URL
+          window.location.href = "https://metamask.app.link/dapp/napft.com"; // Update with your URL
           return;
         } else {
           toast.error("Please install Metamask extension in your browser");
@@ -261,12 +261,6 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         ethers.utils.formatEther(await browserProvider.getBalance(accountAddress))
       );
 
-      if (!checkSufficientSFuel(sFuelBalance)) {
-        toast.error("Insufficient sFuel for transaction");
-        requestSFuel();
-        return;
-      }
-      
       // Get USDC balance
       const usdcContract = new ethers.Contract(
         USDC_CONTRACT_ADDRESS,
@@ -289,6 +283,12 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       });
       
       toast.success("Wallet Connected Successfully");
+
+      // if (!checkSufficientSFuel(sFuelBalance)) {
+      //   await new Promise((resolve) => setTimeout(resolve, 4000));
+      //   toast.error("Filling sFuel");
+      //   await requestSFuel();
+      // }
       
       // Fetch NFTs after successful connection
       getAllNFTs();
@@ -301,6 +301,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         isLoading: false
       });
       toast.error("Failed to connect wallet: " + error.message);
+    } finally {
+      // Ensure isLoading is reset in all cases
+      setWeb3State((prev) => ({ ...prev, isLoading: false }));
     }
   };
   
@@ -315,6 +318,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   // Request sFuel
   const requestSFuel = async () => {
     try {
+      
       if (!web3State.account) {
         toast.error("Please connect your wallet first");
         return;

@@ -6,7 +6,12 @@ export function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <div>
-            <h3 className="text-lg font-display font-bold mb-4">NapFT</h3>
+            <div className="flex items-center gap-1 mb-2 text-xl font-display font-bold">
+          <img src="/processed_logo.png" alt="NapFT" className="h-6 w-auto my-0" />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+              NapFT
+            </span>
+            </div>
             <p className="text-muted-foreground mb-4">
             Empowering NFT creators and traders with real world value, zero gas fees, and a seamless trading experience on SKALE.
             </p>

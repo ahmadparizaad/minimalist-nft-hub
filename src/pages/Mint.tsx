@@ -83,7 +83,6 @@ export default function Mint() {
     }
     
     if (!checkSufficientSFuel(sFuelBalance)) {
-      toast.error("Insufficient sFuel for transaction");
       requestSFuel();
       return;
     }
@@ -259,7 +258,7 @@ export default function Mint() {
                       <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-medium text-yellow-800 mb-1">Wallet Not Connected</h4>
-                        <p className="text-sm text-yellow-700">Connect your wallet to mint NFTs. You'll need sFuel for gas fees.</p>
+                        <p className="text-sm text-yellow-700">Connect your wallet to mint NFTs.</p>
                         <Button onClick={() => connectWallet()} className="mt-2 bg-primary hover:bg-primary/90 text-white">
                           Connect Wallet
                         </Button>

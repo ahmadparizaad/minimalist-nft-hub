@@ -85,7 +85,7 @@ export function FeaturedNFT({ nft }: FeaturedNFTProps) {
 >
   <Button 
     asChild
-    className="w-full sm:w-auto flex-1 bg-primary hover:bg-primary/90 text-white rounded-xl h-12"
+    className="w-full sm:w-auto py-3 flex-1 bg-primary hover:bg-primary/90 text-white rounded-xl h-12"
   >
     <Link to={`/nft/${nft._id || nft.tokenId || 0}`}>
       View Details
@@ -94,7 +94,7 @@ export function FeaturedNFT({ nft }: FeaturedNFTProps) {
   
   <Button 
     variant="outline" 
-    className="w-full sm:w-auto flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl h-12"
+    className="w-full sm:w-auto py-2 flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl h-12"
     asChild
   >
     <Link to={`/marketplace`}>

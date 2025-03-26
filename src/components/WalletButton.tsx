@@ -41,10 +41,10 @@ export function WalletButton() {
             <span>Balance:</span>
             <span className="font-medium">{usdcBalance.toFixed(2)} USDC</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="flex justify-between">
+          {/* <DropdownMenuItem className="flex justify-between">
             <span>sFuel:</span>
             <span className="font-medium">{sFuelBalance.toFixed(4)}</span>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
           <DropdownMenuSeparator />
           {/* <DropdownMenuItem 
             disabled={hasRequestedSFuel || isLoading}

@@ -16,6 +16,7 @@ import { contractAddress } from "@/context/secret_final";
 import { nftAPI, userAPI } from "@/api/apiService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function NFTDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,7 @@ export default function NFTDetail() {
   const [isOwner, setIsOwner] = useState(false);
   const [creatorProfile, setCreatorProfile] = useState<Creator | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<Creator | null>(null);
+  const [showInsufficientFundsDialog, setShowInsufficientFundsDialog] = useState(false);
   
   useEffect(() => {
     const fetchNFTData = async () => {
@@ -113,21 +115,13 @@ export default function NFTDetail() {
     }
     
     if (!checkSufficientSFuel(sFuelBalance)) {
-      toast.error("Insufficient sFuel for transaction");
+      // toast.error("Filling sFuel for transaction");
       requestSFuel();
       return;
     }
     
     if (!checkSufficientBalance(usdcBalance, nft.price)) {
-      toast.error(
-        "Insufficient balance to purchase this NFT. Please add more USDC to your wallet.",
-        {
-          action: {
-            label: "Bridge USDC",
-            onClick: () => window.open("https://bridge.skale.network/", "_blank"),
-          },
-        }
-      );
+      setShowInsufficientFundsDialog(true);
       return;
     }
     
@@ -611,6 +605,35 @@ export default function NFTDetail() {
       </main>
       
       <Footer />
+
+      {/* Insufficient Funds Dialog */}
+      <Dialog open={showInsufficientFundsDialog} onOpenChange={setShowInsufficientFundsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insufficient Funds</DialogTitle>
+          </DialogHeader>
+          <p>
+            You do not have enough USDC. Bridge USDC tokens to the SKALE tesnet.
+          </p>
+          <DialogFooter>
+            <Button
+              asChild
+              className="px-5"
+              onClick={() => {
+                window.open(
+                  "https://testnet.portal.skale.space/bridge?from=mainnet&to=giant-half-dual-testnet&token=usdc&type=erc20",
+                  "_blank"
+                );
+              }}
+            >
+              <a>Bridge</a>
+            </Button>
+            <Button variant="outline" onClick={() => setShowInsufficientFundsDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
