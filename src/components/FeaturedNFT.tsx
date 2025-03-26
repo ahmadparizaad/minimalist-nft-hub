@@ -78,30 +78,31 @@ export function FeaturedNFT({ nft }: FeaturedNFTProps) {
           </motion.div>
           
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-auto flex gap-4"
-          >
-            <Button 
-              asChild
-              className="flex-1 bg-primary hover:bg-primary/90 text-white rounded-xl h-12"
-            >
-              <Link to={`/nft/${nft._id || nft.tokenId || 0}`}>
-                View Details
-              </Link>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl h-12"
-              asChild
-            >
-              <Link to={`/marketplace`}>
-                Browse More
-              </Link>
-            </Button>
-          </motion.div>
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.6 }}
+  className="mt-auto flex flex-col sm:flex-row gap-3"
+>
+  <Button 
+    asChild
+    className="w-full sm:w-auto flex-1 bg-primary hover:bg-primary/90 text-white rounded-xl h-12"
+  >
+    <Link to={`/nft/${nft._id || nft.tokenId || 0}`}>
+      View Details
+    </Link>
+  </Button>
+  
+  <Button 
+    variant="outline" 
+    className="w-full sm:w-auto flex-1 border-primary text-primary hover:bg-primary/10 rounded-xl h-12"
+    asChild
+  >
+    <Link to={`/marketplace`}>
+      Browse More
+    </Link>
+  </Button>
+</motion.div>
+
         </div>
       </div>
     </motion.div>
