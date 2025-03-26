@@ -725,7 +725,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       );
       
       // Approve NFT Marketplace Contract to spend USDC
-      toast.info("Approving USDC spend...");
+      // toast.info("Approving USDC spend...");
       const approvalTx = await usdcContract.approve(contractAddress, price);
       await approvalTx.wait();
       console.log("Approval Successful");
@@ -734,6 +734,17 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       toast.info("Purchasing NFT...");
       const tx = await contractWithSigner.buy(tokenId);
       await tx.wait();
+      
+      // After successful on-chain purchase, update the backend
+      try {
+        // Call the API to update the backend
+        const res = await nftAPI.buyNFT(tokenId, web3State.account || "", "");
+        console.log("Backend updated with purchase:", res);
+      } catch (apiError) {
+        console.error("Error updating backend after purchase:", apiError);
+        // Don't throw here, we still want to consider the purchase successful
+        // since the blockchain transaction went through
+      }
       
       // Update the NFTs list
       getAllNFTs();

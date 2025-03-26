@@ -17,12 +17,13 @@ import { nftAPI, userAPI } from "@/api/apiService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 export default function NFTDetail() {
   const { id } = useParams<{ id: string }>();
   const { web3State, connectWallet, requestSFuel, getTransactionHistory, buyNFT: buyNFTOnChain } = useWeb3();
   const { isConnected, account, sFuelBalance, usdcBalance } = web3State;
-  
+  const navigate = useNavigate();
   const [nft, setNft] = useState<NFT | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,7 +102,8 @@ export default function NFTDetail() {
     }
   }, [id, getTransactionHistory, account, isConnected]);
 
-  const handlePurchase = async () => {
+  const handlePurchase = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
     if (!isConnected) {
       toast.error("Please connect your wallet first");
       return;
@@ -115,7 +117,7 @@ export default function NFTDetail() {
     }
     
     if (!checkSufficientSFuel(sFuelBalance)) {
-      // toast.error("Filling sFuel for transaction");
+      toast.error("Buying NFT");
       requestSFuel();
       return;
     }
@@ -128,29 +130,34 @@ export default function NFTDetail() {
     setIsPurchasing(true);
     
     try {
+      // Execute the on-chain transaction - the API calls are now moved to Web3Context
       await buyNFTOnChain(parseInt(nft.tokenId.toString()));
       
-      await nftAPI.buyNFT(nft.tokenId, account || "", "");
-      
+      // Refresh NFT data after purchase
       const updatedNftResponse = await nftAPI.getNFTById(id || "");
       setNft(updatedNftResponse.data);
       setIsOwner(true);
       
-      toast.success("NFT purchased successfully!");
+      // Refresh transaction history
+      if (nft.tokenId) {
+        const txHistory = await nftAPI.getTransactionHistory(nft.tokenId);
+        const formattedTxs: Transaction[] = txHistory.data.map((tx: { type: string; from: string; to: string; price: string; timestamp: string }, index: number) => {
+          return {
+            id: `tx-${index}`,
+            type: tx.type,
+            nftId: id,
+            from: tx.from || '',
+            to: tx.to || '',
+            price: parseFloat(tx.price || '0'),
+            currency: 'USDC',
+            timestamp: tx.timestamp || new Date().toISOString(),
+            txHash: `0x${Math.random().toString(16).slice(2, 66)}`
+          };
+        });
+        
+        setTransactions(formattedTxs);
+      }
       
-      const newTransaction: Transaction = {
-        id: `tx-${Date.now()}`,
-        type: 'buy',
-        nftId: nft._id,
-        from: nft.owner,
-        to: account ?? "",
-        price: nft.price,
-        currency: nft.currency,
-        timestamp: new Date().toISOString(),
-        txHash: `0x${Math.random().toString(16).slice(2, 66)}`
-      };
-      
-      setTransactions([newTransaction, ...transactions]);
     } catch (error) {
       console.error("Error purchasing NFT:", error);
       toast.error("Failed to purchase NFT");
@@ -355,9 +362,9 @@ export default function NFTDetail() {
               className="lg:w-1/2"
             >
               <div className="flex items-center gap-4 mb-3">
-                {/* <Badge variant="outline" className={nft.isListed ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
+                <Badge variant="outline" className={nft.isListed ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
                   {nft.isListed ? "Listed" : "Not Listed"}
-                </Badge> */}
+                </Badge>
                 <Badge variant="secondary">{nft.category}</Badge>
                 <Badge variant="secondary">{nft.tokenStandard}</Badge>
               </div>
@@ -423,7 +430,7 @@ export default function NFTDetail() {
                 </div>
               )}
               
-              {nft.isListed && (
+              {nft.isListed ? (
                 <Card className="mb-8">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-center mb-4">
@@ -435,42 +442,6 @@ export default function NFTDetail() {
                         <Button 
                           variant="outline" 
                           className="border-green-500 text-green-500 hover:bg-green-500/10"
-                          // onClick={async () => {
-                          //   try {
-                          //     toast.loading("Unlisting NFT...");
-                              
-                          //     await nftAPI.updateNFT(nft.tokenId, {
-                          //       isListed: false,
-                          //       owner: nft.owner
-                          //     });
-                              
-                          //     // Refresh NFT data
-                          //     const updatedNftResponse = await nftAPI.getNFTById(id || "");
-                          //     setNft(updatedNftResponse.data);
-                              
-                          //     // Add transaction to history
-                          //     const newTransaction: Transaction = {
-                          //       id: `tx-${Date.now()}`,
-                          //       type: 'unlist',
-                          //       nftId: nft._id,
-                          //       from: nft.owner,
-                          //       to: nft.owner,
-                          //       price: nft.price,
-                          //       currency: nft.currency,
-                          //       timestamp: new Date().toISOString(),
-                          //       txHash: `0x${Math.random().toString(16).slice(2, 66)}`
-                          //     };
-                              
-                          //     setTransactions([newTransaction, ...transactions]);
-                              
-                          //     toast.dismiss();
-                          //     toast.success("NFT unlisted successfully");
-                          //   } catch (error) {
-                          //     console.error("Error unlisting NFT:", error);
-                          //     toast.dismiss();
-                          //     toast.error("Failed to unlist NFT");
-                          //   }
-                          // }}
                         >
                           You own this NFT
                         </Button>
@@ -497,6 +468,28 @@ export default function NFTDetail() {
                         Connect Wallet to Buy
                       </Button>
                     )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="mb-8">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <p className="text-xl font-display font-medium text-red-500">Not Listed for Sale</p>
+                      </div>
+                      {isOwner && (
+                        <Button 
+                          variant="outline"
+                          className="border-blue-500 text-blue-500 hover:bg-blue-500/10"
+                          onClick={() => navigate(`/update-nft/${nft?.tokenId}`)}
+                          // Here you could add a function to list the NFT if the owner wants to sell it
+                          // onClick={handleListNFT}
+                        >
+                          List for Sale
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
