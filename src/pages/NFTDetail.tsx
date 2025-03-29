@@ -103,61 +103,59 @@ export default function NFTDetail() {
   }, [id, getTransactionHistory, account, isConnected]);
 
   const handlePurchase = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+    event.preventDefault(); // Prevent the default form submission behavior
+
     if (!isConnected) {
       toast.error("Please connect your wallet first");
       return;
     }
-    
+
     if (!nft) return;
-    
+
     if (isOwner) {
       toast.error("You already own this NFT");
       return;
     }
-    
+
+    if (!checkSufficientBalance(usdcBalance, nft.price)) {
+      setShowInsufficientFundsDialog(true);
+      return;
+    }
+
+    setIsPurchasing(true);
+
     if (!checkSufficientSFuel(sFuelBalance)) {
       toast.error("Buying NFT");
       requestSFuel();
       return;
     }
-    
-    if (!checkSufficientBalance(usdcBalance, nft.price)) {
-      setShowInsufficientFundsDialog(true);
-      return;
-    }
-    
-    setIsPurchasing(true);
-    
+
     try {
-      // Execute the on-chain transaction - the API calls are now moved to Web3Context
+      // Execute the on-chain transaction
       await buyNFTOnChain(parseInt(nft.tokenId.toString()));
-      
+
       // Refresh NFT data after purchase
       const updatedNftResponse = await nftAPI.getNFTById(id || "");
       setNft(updatedNftResponse.data);
       setIsOwner(true);
-      
+
       // Refresh transaction history
       if (nft.tokenId) {
         const txHistory = await nftAPI.getTransactionHistory(nft.tokenId);
-        const formattedTxs: Transaction[] = txHistory.data.map((tx: { type: string; from: string; to: string; price: string; timestamp: string }, index: number) => {
-          return {
-            id: `tx-${index}`,
-            type: tx.type,
-            nftId: id,
-            from: tx.from || '',
-            to: tx.to || '',
-            price: parseFloat(tx.price || '0'),
-            currency: 'USDC',
-            timestamp: tx.timestamp || new Date().toISOString(),
-            txHash: `0x${Math.random().toString(16).slice(2, 66)}`
-          };
-        });
-        
+        const formattedTxs: Transaction[] = txHistory.data.map((tx, index) => ({
+          id: `tx-${index}`,
+          type: tx.type,
+          nftId: id,
+          from: tx.from || "",
+          to: tx.to || "",
+          price: parseFloat(tx.price || "0"),
+          currency: "USDC",
+          timestamp: tx.timestamp || new Date().toISOString(),
+          txHash: `0x${Math.random().toString(16).slice(2, 66)}`,
+        }));
+
         setTransactions(formattedTxs);
       }
-      
     } catch (error) {
       console.error("Error purchasing NFT:", error);
       toast.error("Failed to purchase NFT");
@@ -370,13 +368,13 @@ export default function NFTDetail() {
               </div>
               
               <h1 className="text-3xl font-display font-bold mb-3">{nft.title}</h1>
-              
-              <div className="flex items-center gap-6 mb-6">
+              <p className="text-muted-foreground mb-8">{nft.description}</p>
+
+              <div className="flex flex-col md:flex-row md:items-center gap-6 mb-6">
                 <div className="flex flex-col">
                   <p className="text-sm text-muted-foreground mb-1">Creator</p>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{formatAddress(nft.creator)}</p>
-                    <TooltipProvider>
+                  <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.creator}`}>
@@ -394,13 +392,14 @@ export default function NFTDetail() {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <p className="font-medium">{formatAddress(nft.creator)}</p>
+                    
                   </div>
                 </div>
                 <div className="flex flex-col">
                   <p className="text-sm text-muted-foreground mb-1">Owner</p>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{formatAddress(nft.owner)}</p>
-                    <TooltipProvider>
+                  <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.owner}`}>
@@ -418,11 +417,12 @@ export default function NFTDetail() {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <p className="font-medium">{formatAddress(nft.owner)}</p>
+                    
                   </div>
                 </div>
               </div>
               
-              <p className="text-muted-foreground mb-8">{nft.description}</p>
               
               {isOwner && (
                 <div className="mb-8 flex gap-3">
@@ -439,32 +439,36 @@ export default function NFTDetail() {
                         <p className="text-2xl font-display font-bold">{formatPrice(nft.price, nft.currency)}</p>
                       </div>
                       {isOwner ? (
-                        <Button 
-                          variant="outline" 
-                          className="border-green-500 text-green-500 hover:bg-green-500/10"
-                        >
-                          You own this NFT
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={handlePurchase}
-                          disabled={isPurchasing || !isConnected || isOwner}
-                          className="bg-primary hover:bg-primary/90 text-white"
-                        >
-                          {isPurchasing ? (
-                            <>
-                              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></span>
-                              Processing...
-                            </>
-                          ) : (
-                            <>Buy Now</>
-                          )}
-                        </Button>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        className="border-green-500 text-green-500 hover:bg-green-500/10"
+                      >
+                        You own this NFT
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handlePurchase}
+                        disabled={isPurchasing || !isConnected || isOwner}
+                        className="bg-primary hover:bg-primary/90 text-white"
+                        type="button" // Add this attribute
+                      >
+                        {isPurchasing ? (
+                          <>
+                            <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></span>
+                            Processing...
+                          </>
+                        ) : (
+                          <>Buy Now</>
+                        )}
+                      </Button>
+                    )}
                     </div>
                     
                     {!isConnected && (
-                      <Button onClick={() => connectWallet()} className="w-full">
+                      <Button onClick={(e) => {e.preventDefault()
+                        connectWallet();
+                      } } 
+                      className="w-full">
                         Connect Wallet to Buy
                       </Button>
                     )}

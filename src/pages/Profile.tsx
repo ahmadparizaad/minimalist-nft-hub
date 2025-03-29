@@ -346,151 +346,46 @@ export default function Profile() {
   useEffect(() => {
     const fetchProfileData = async () => {
       setIsLoading(true);
+
       try {
-        // Try to get creator data from API
-        let creatorData = null;
-        try {
-          const creatorResponse = await userAPI.getUserByAddress(profileAddress);
-          if (creatorResponse && creatorResponse.data) {
-            creatorData = creatorResponse.data;
-            // If the API returns data, update the local state
-            if (profileAddress === account) {
-              localStorage.setItem('userProfile', JSON.stringify(creatorData));
-            }
-            
-            // Update followers/following counts
-            if (typeof creatorData.followersCount === 'number') {
-              setFollowersCount(creatorData.followersCount);
-            } else if (Array.isArray(creatorData.followers)) {
-              setFollowersCount(creatorData.followers.length);
-            }
-            
-            if (typeof creatorData.followingCount === 'number') {
-              setFollowingCount(creatorData.followingCount);
-            } else if (Array.isArray(creatorData.following)) {
-              setFollowingCount(creatorData.following.length);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          // Check if we have locally saved profile data for this address
-          if (profileAddress === account) {
-            const savedProfile = localStorage.getItem('userProfile');
-            if (savedProfile) {
-              try {
-                const parsedProfile = JSON.parse(savedProfile);
-                if (parsedProfile.address === profileAddress) {
-                  creatorData = parsedProfile;
-                  console.log("Using locally saved profile data:", creatorData);
-                }
-              } catch (e) {
-                console.error("Error parsing saved profile data:", e);
-              }
-            }
-          }
-          
-          // If still no data, fallback to mock creator data
-          if (!creatorData) {
-            creatorData = generateMockCreators(5).find(
-              c => c.address.toLowerCase() === profileAddress?.toLowerCase()
-            );
-          }
+        // Fetch all data in parallel
+        const [creatorResponse, ownedResponse, createdResponse, txResponse] = await Promise.all([
+          userAPI.getUserByAddress(profileAddress), // Fetch profile details
+          nftAPI.getNFTsByOwner(profileAddress),   // Fetch owned NFTs
+          nftAPI.getNFTsByCreator(profileAddress), // Fetch created NFTs
+          transactionAPI.getTransactionsByUser(profileAddress), // Fetch transactions
+        ]);
+
+        // Handle creator data
+        if (creatorResponse?.data) {
+          const creatorData = creatorResponse.data;
+          setCreator(creatorData);
+
+          // Update followers/following counts
+          setFollowersCount(
+            typeof creatorData.followersCount === "number"
+              ? creatorData.followersCount
+              : Array.isArray(creatorData.followers)
+              ? creatorData.followers.length
+              : 0
+          );
+          setFollowingCount(
+            typeof creatorData.followingCount === "number"
+              ? creatorData.followingCount
+              : Array.isArray(creatorData.following)
+              ? creatorData.following.length
+              : 0
+          );
         }
-        setCreator(creatorData || null);
-        
-        // Fetch owned NFTs from API
-        let ownedNFTsData: NFT[] = [];
-        try {
-          const ownedResponse = await nftAPI.getNFTsByOwner(profileAddress);
-          if (ownedResponse && ownedResponse.data) {
-            ownedNFTsData = ownedResponse.data;
-          }
-        } catch (error) {
-          console.error("Error fetching owned NFTs:", error);
-          // Fallback to blockchain call if API fails
-          try {
-            const result = await getMyNFTs();
-            if (Array.isArray(result) && result.length > 0) {
-              ownedNFTsData = result as NFT[];
-            }
-          } catch (blockchainError) {
-            console.error("Error fetching NFTs from blockchain:", blockchainError);
-            // Fallback to filtering mock data if both API and blockchain fail
-            const allNFTs = generateMockNFTs(5);
-            ownedNFTsData = allNFTs.filter(
-              nft => nft.owner.toLowerCase() === profileAddress.toLowerCase()
-            );
-          }
-        }
-        setOwnedNFTs(ownedNFTsData);
-        
-        // Fetch created NFTs from API
-        let createdNFTsData: NFT[] = [];
-        try {
-          const createdResponse = await nftAPI.getNFTsByCreator(profileAddress);
-          console.log("Creator API response:", createdResponse);
-          
-          if (createdResponse && createdResponse.data) {
-            // Check if data is an array or if it's inside a nested structure
-            if (Array.isArray(createdResponse.data)) {
-              createdNFTsData = createdResponse.data;
-            } else if (createdResponse.data.data && Array.isArray(createdResponse.data.data)) {
-              createdNFTsData = createdResponse.data.data;
-            }
-            console.log("Parsed created NFTs from API:", createdNFTsData);
-          }
-        } catch (error) {
-          console.error("Error fetching created NFTs:", error);
-          // Fallback to fetching all NFTs and filtering if created API fails
-          try {
-            console.log("Falling back to getAllNFTs for created NFTs");
-            const result = await getAllNFTs();
-            console.log("All NFTs result:", result);
-            
-            if (Array.isArray(result) && result.length > 0) {
-              createdNFTsData = (result as NFT[]).filter(
-                nft => nft.creator && nft.creator.toLowerCase() === profileAddress.toLowerCase()
-              );
-              console.log("Filtered created NFTs from all NFTs:", createdNFTsData);
-            }
-          } catch (blockchainError) {
-            console.error("Error fetching NFTs from blockchain:", blockchainError);
-            // Fallback to mock data
-            console.log("Falling back to mock data for created NFTs");
-            const allNFTs = generateMockNFTs(5);
-            createdNFTsData = allNFTs.filter(
-              nft => nft.creator.toLowerCase() === profileAddress.toLowerCase()
-            );
-          }
-        }
-        
-        console.log("Final createdNFTs before setting state:", createdNFTsData);
-        setCreatedNFTs(createdNFTsData);
-        
-        // Also fetch all NFTs for potential other uses
-        try {
-          const allNFTsResponse = await getAllNFTs();
-          if (Array.isArray(allNFTsResponse) && allNFTsResponse.length > 0) {
-            setAllNfts(allNFTsResponse as NFT[]);
-          }
-        } catch (error) {
-          console.error("Error fetching all NFTs:", error);
-          setAllNfts(generateMockNFTs(5));
-        }
-        
-        // Set transactions
-        try {
-          const txResponse = await transactionAPI.getTransactionsByUser(profileAddress);
-          if (txResponse && txResponse.data) {
-            setTransactions(txResponse.data);
-          } else {
-            setTransactions(generateMockTransactions());
-          }
-        } catch (error) {
-          console.error("Error fetching transactions:", error);
-          setTransactions(generateMockTransactions());
-        }
-        
+
+        // Handle owned NFTs
+        setOwnedNFTs(ownedResponse?.data || []);
+
+        // Handle created NFTs
+        setCreatedNFTs(createdResponse?.data || []);
+
+        // Handle transactions
+        setTransactions(txResponse?.data || []);
       } catch (error) {
         console.error("Error fetching profile data:", error);
         toast.error("Failed to load profile data");
@@ -498,12 +393,11 @@ export default function Profile() {
         setIsLoading(false);
       }
     };
-  
+
     if (profileAddress) {
-      console.log("Fetching NFTs for:", profileAddress);
       fetchProfileData();
     }
-  }, [profileAddress, getAllNFTs, getMyNFTs]);
+  }, [profileAddress]);
 
   const handleCopyAddress = () => {
     if (profileAddress) {

@@ -20,59 +20,81 @@ export default function Index() {
   const [topCollections, setTopCollections] = useState<Collection[]>([]);
   const [topTraders, setTopTraders] = useState<Creator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingStates, setLoadingStates] = useState({
+    featured: true,
+    trending: true,
+    traders: true
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      
+      // Use a staggered approach to fetch data
       try {
-        // Fetch trending NFTs from API
-        const trendingResponse = await nftAPI.getTrendingNFTs(4);
-        let trendingData: NFT[] = [];
-
-        if (trendingResponse.success && trendingResponse.data && trendingResponse.data.length > 0) {
-          trendingData = trendingResponse.data;
-          console.log('Using real trending NFTs from API');
-        } else {
-          // Fallback to mock data if API fails
-          trendingData = generateMockNFTs(4);
-          console.log('Using mock trending NFTs');
+        // Start all fetch operations in parallel
+        const trendingPromise = nftAPI.getTrendingNFTs(4);
+        const tradersPromise = userAPI.getTopTraders(6);
+        const featuredPromise = nftAPI.getNFTByTokenId(26);
+        
+        // Handle trending NFTs
+        try {
+          const trendingResponse = await trendingPromise;
+          if (trendingResponse.success && trendingResponse.data && trendingResponse.data.length > 0) {
+            setTrendingNFTs(trendingResponse.data);
+            console.log('Using real trending NFTs from API');
+          } else {
+            // Fallback to mock data if API fails
+            setTrendingNFTs(generateMockNFTs(4));
+            console.log('Using mock trending NFTs');
+          }
+        } catch (error) {
+          console.error("Error fetching trending NFTs:", error);
+          setTrendingNFTs(generateMockNFTs(4));
+        } finally {
+          setLoadingStates(prev => ({ ...prev, trending: false }));
         }
-
-        // Fetch top traders from the database
-        const tradersResponse = await userAPI.getTopTraders(6);
-        let tradersData: Creator[] = [];
-
-        if (tradersResponse.success && tradersResponse.data && tradersResponse.data.length > 0) {
-          tradersData = tradersResponse.data;
-          console.log('Using real top traders from database');
+        
+        // Handle top traders
+        try {
+          const tradersResponse = await tradersPromise;
+          if (tradersResponse.success && tradersResponse.data && tradersResponse.data.length > 0) {
+            setTopTraders(tradersResponse.data);
+            console.log('Using real top traders from database');
+          } else {
+            setTopTraders(generateMockCreators(6));
+          }
+        } catch (error) {
+          console.error("Error fetching top traders:", error);
+          setTopTraders(generateMockCreators(6));
+        } finally {
+          setLoadingStates(prev => ({ ...prev, traders: false }));
         }
-
+        
+        // Handle featured NFT
+        try {
+          const response = await featuredPromise;
+          console.log('Featured NFT response:', response);
+          
+          if (response.success && response.data) {
+            setFeaturedNFT(response.data);
+          } else {
+            // Use the first trending NFT as a fallback for featured
+            const mockData = generateMockNFTs(1);
+            setFeaturedNFT(mockData[0]);
+          }
+        } catch (error) {
+          console.error("Error fetching featured NFT:", error);
+          const mockData = generateMockNFTs(1);
+          setFeaturedNFT(mockData[0]);
+        } finally {
+          setLoadingStates(prev => ({ ...prev, featured: false }));
+        }
+        
         // Generate collections data (mock for now)
-        const collections = generateMockCollections(4);
-
-        // Fetch a real NFT from the API for the featured slot
-        const response = await nftAPI.getNFTByTokenId(26);
-        console.log('Featured NFT response:', response);
-
-        // Only set the featuredNFT if the API call was successful and the data exists
-        if (response.success && response.data) {
-          setFeaturedNFT(response.data);
-        } else {
-          // Use the first trending NFT as a fallback for featured
-          setFeaturedNFT(trendingData[0]);
-        }
-
-        setTrendingNFTs(trendingData);
-        setTopCollections(collections);
-        setTopTraders(tradersData);
+        setTopCollections(generateMockCollections(4));
       } catch (error) {
-        console.error("Error fetching data:", error);
-        // Use mock data as fallback in case of error for NFTs and collections
-        const mockData = generateMockNFTs(8);
-
-        setFeaturedNFT(mockData[0]);
-        setTrendingNFTs(mockData.slice(1, 5));
-        // We don't use mock data for traders anymore
+        console.error("Error in fetch operations:", error);
       } finally {
         setIsLoading(false);
       }
@@ -80,6 +102,24 @@ export default function Index() {
 
     fetchData();
   }, []);
+
+  // Helper component for the featured NFT skeleton
+  const FeaturedNFTSkeleton = () => (
+    <div className="bg-card/30 rounded-3xl overflow-hidden shadow-lg animate-pulse">
+      <div className="flex flex-col lg:flex-row">
+        <div className="w-full lg:w-3/5 aspect-square lg:aspect-auto bg-muted"></div>
+        <div className="w-full lg:w-2/5 p-6 lg:p-8 flex flex-col justify-center">
+          <div className="h-8 bg-muted rounded-full w-3/4 mb-4"></div>
+          <div className="h-6 bg-muted rounded-full w-1/2 mb-6"></div>
+          <div className="h-24 bg-muted rounded-xl mb-6"></div>
+          <div className="flex space-x-4">
+            <div className="h-12 bg-muted rounded-xl w-32"></div>
+            <div className="h-12 bg-muted rounded-xl w-32"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -139,8 +179,24 @@ export default function Index() {
               </div>
             </motion.div>
 
-            {/* Featured NFT */}
-            {featuredNFT && <FeaturedNFT nft={featuredNFT} />}
+            {/* Search Section */}
+            {/* <div className="mb-12">
+              <div className="max-w-2xl mx-auto">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Search className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <input 
+                    type="search" 
+                    className="block w-full p-4 pl-10 text-sm rounded-xl border border-input bg-background focus:ring-primary focus:border-primary" 
+                    placeholder="Search for NFTs, collections or creators..." 
+                  />
+                </div>
+              </div>
+            </div> */}
+
+            {/* Featured NFT - with loading skeleton */}
+            {loadingStates.featured ? <FeaturedNFTSkeleton /> : featuredNFT && <FeaturedNFT nft={featuredNFT} />}
           </div>
         </section>
 
@@ -158,7 +214,7 @@ export default function Index() {
               </Button>
             </div>
 
-            <TopTraders traders={topTraders} isLoading={isLoading} />
+            <TopTraders traders={topTraders} isLoading={loadingStates.traders} />
           </div>
         </section>
 
@@ -177,9 +233,15 @@ export default function Index() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {isLoading
+              {loadingStates.trending
                 ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+                  <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse overflow-hidden">
+                    <div className="h-3/4 bg-muted/80"></div>
+                    <div className="p-4">
+                      <div className="h-4 bg-muted/80 rounded-full w-3/4 mb-2"></div>
+                      <div className="h-4 bg-muted/80 rounded-full w-1/2"></div>
+                    </div>
+                  </div>
                 ))
                 : trendingNFTs.slice(0, 4).map((nft, index) => (
                   <NFTCard key={nft._id} nft={nft} index={index} />
@@ -188,33 +250,6 @@ export default function Index() {
             </div>
           </div>
         </section>
-
-        {/* Top Collections Section */}
-        {/* <section className="py-16 px-4">
-          <div className="container mx-auto max-w-6xl">
-            <div className="flex justify-between items-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-display font-bold">
-                Top Collections
-              </h2>
-              <Button asChild variant="outline">
-                <Link to="/marketplace">
-                  View All
-                </Link>
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {isLoading 
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-64 rounded-xl bg-muted animate-pulse" />
-                  ))
-                : topCollections.map((collection, index) => (
-                    <CollectionCard key={collection.id} collection={collection} index={index} />
-                  ))
-              }
-            </div>
-          </div>
-        </section> */}
 
         {/* Call to Action Section */}
         <section className="py-24 px-4 bg-gradient-to-r from-primary/10 to-primary/5">
