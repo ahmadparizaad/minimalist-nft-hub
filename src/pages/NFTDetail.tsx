@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -38,7 +38,31 @@ export default function NFTDetail() {
   const [showInsufficientFundsDialog, setShowInsufficientFundsDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showEnjoyingDialog, setShowEnjoyingDialog] = useState(false);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
+
+  const loaderRef = useRef<HTMLDivElement>(null);
+const [hasMore, setHasMore] = useState(true);
+
+useEffect(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && hasMore) {
+        setCurrentPage(prev => prev + 1);
+      }
+    },
+    { threshold: 1.0 }
+  );
+
+  if (loaderRef.current) {
+    observer.observe(loaderRef.current);
+  }
+
+  return () => observer.disconnect();
+}, [hasMore]);
+
+useEffect(() => {
+  setHasMore(currentPage * itemsPerPage < transactions.length);
+}, [transactions, currentPage]);
 
   const isOwner = useMemo(
     () => isConnected && account?.toLowerCase() === nft?.owner?.toLowerCase(),
@@ -394,64 +418,94 @@ export default function NFTDetail() {
                 </TabsList>
 
                 <TabsContent value="history" className="mt-4">
-                  <div className="space-y-4">
-                    {isLoadingHistory ? (
-                      <div className="text-center py-8">Loading history...</div>
-                    ) : formattedTransactions.length > 0 ? (
-                      <>
-                        {formattedTransactions.map((tx) => (
-                          <div key={tx.id} className="flex items-center p-4 rounded-lg border">
-                            {tx.type === 'mint' && <Shield className="text-blue-500 mr-3" />}
-                            {tx.type === 'buy' && <ArrowRight className="text-green-500 mr-3" />}
-                            <div className="flex-1">
-                              <div className="flex justify-between">
-                                <p className="font-medium capitalize">{tx.type}</p>
-                                <p className="text-sm text-muted-foreground">{tx.timeAgo}</p>
-                              </div>
-                              <div className="flex justify-between mt-1">
-                                <p className="text-sm">
-                                  {formatAddress(tx.from)} → {formatAddress(tx.to)}
-                                </p>
-                                {tx.price > 0 && <p className="text-sm font-medium">{formatPrice(tx.price, tx.currency)}</p>}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {transactions.length > currentPage * itemsPerPage && (
-                          <Button 
-                            variant="outline" 
-                            className="w-full"
-                            onClick={() => setCurrentPage(p => p + 1)}
-                          >
-                            Load More
-                          </Button>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No transaction history found
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
+  <div className="space-y-4">
+    {isLoadingHistory ? (
+      <div className="text-center py-8">Loading history...</div>
+    ) : formattedTransactions.length > 0 ? (
+      <div className="border rounded-lg overflow-hidden">
+        <div className="max-h-96 overflow-y-auto scrollbar-rounded">
+          {formattedTransactions.map((tx, index) => (
+            <div 
+              key={tx.id} 
+              className="flex items-center p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors"
+              ref={index === formattedTransactions.length - 1 ? loaderRef : null}
+            >
+              {tx.type === 'mint' && <Shield className="text-blue-500 mr-3" />}
+              {tx.type === 'buy' && <ArrowRight className="text-green-500 mr-3" />}
+              <div className="flex-1">
+                <div className="flex justify-between">
+                  <p className="font-medium capitalize">{tx.type}</p>
+                  <p className="text-sm text-muted-foreground">{tx.timeAgo}</p>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <p className="text-sm">
+                    {formatAddress(tx.from)} → {formatAddress(tx.to)}
+                  </p>
+                  {tx.price > 0 && <p className="text-sm font-medium">{formatPrice(tx.price, tx.currency)}</p>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div className="text-center py-8 text-muted-foreground">
+        No transaction history found
+      </div>
+    )}
+  </div>
+</TabsContent>
 
                 <TabsContent value="details" className="mt-4">
-                  <div className="space-y-4">
-                    <div className="flex justify-between p-3 border-b">
-                      <p>Contract Address</p>
-                      <p className="font-mono">{formatAddress(contractAddress)}</p>
-                    </div>
-                    <Button variant="outline" className="w-full" asChild>
-                      <a 
-                        href={`https://explorer.skale.space/token/${contractAddress}?a=${nft.tokenId}`} 
-                        target="_blank"
-                        rel="noopener"
-                      >
-                        View on Explorer <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
-                    </Button>
+                <div className="space-y-4">
+                  {/* Contract Address */}
+                  <div className="flex justify-between p-3">
+                    <p>Contract Address</p>
+                    <p className="font-mono">{formatAddress(contractAddress)}</p>
                   </div>
-                </TabsContent>
+
+                  {/* Token ID */}
+                  <div className="flex justify-between p-3">
+                    <p>Token ID</p>
+                    <p className="font-mono">#{nft.tokenId}</p>
+                  </div>
+
+                  {/* Token Standard */}
+                  <div className="flex justify-between p-3">
+                    <p>Token Standard</p>
+                    <p>{nft.tokenStandard}</p>
+                  </div>
+
+                  {/* Royalty Fee */}
+                  <div className="flex justify-between p-3">
+                    <p>Royalty Fee</p>
+                    <p>{nft.royaltyFee.toFixed(1)}%</p>
+                  </div>
+
+                  {/* Created Date */}
+                  <div className="flex justify-between p-3">
+                    <p>Created Date</p>
+                    <p>{new Date(nft.createdAt).toLocaleDateString()}</p>
+                  </div>
+
+                  {/* Category */}
+                  <div className="flex justify-between p-3">
+                    <p>Category</p>
+                    <p>{nft.category}</p>
+                  </div>
+
+                  {/* View on Explorer */}
+                  <Button variant="outline" className="w-full" asChild>
+                    <a 
+                      href={`https://explorer.skale.space/token/${contractAddress}?a=${nft.tokenId}`} 
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      View on Explorer <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              </TabsContent>
               </Tabs>
             </motion.div>
           </div>
