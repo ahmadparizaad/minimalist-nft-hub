@@ -309,7 +309,7 @@ export default function NFTDetail() {
               className="lg:w-1/2"
             >
               <div className="relative aspect-square overflow-hidden rounded-2xl border border-border/50 shadow-sm">
-                <img
+                <img loading="lazy"
                   src={nft.image}
                   alt={nft.title}
                   className="w-full h-full object-cover"
@@ -381,7 +381,7 @@ export default function NFTDetail() {
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.creator}`}>
                             <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
-                              <AvatarImage 
+                              <AvatarImage loading="lazy"
                                 src={creatorProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.creator}`} 
                                 alt={`${formatAddress(nft.creator)} profile`} 
                               />
@@ -405,7 +405,7 @@ export default function NFTDetail() {
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.owner}`}>
                             <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
-                              <AvatarImage 
+                              <AvatarImage loading="lazy"
                                 src={ownerProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.owner}`} 
                                 alt={`${formatAddress(nft.owner)} profile`} 
                               />

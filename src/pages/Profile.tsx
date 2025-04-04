@@ -799,7 +799,7 @@ export default function Profile() {
           >
             <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
               <div className="relative">
-                <img
+                <img loading="lazy"
                   src={creator?.profileImage || creator?.avatar || `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`}
                   alt="Profile"
                   className="w-32 h-32 rounded-full border-4 border-background object-cover"
@@ -1018,7 +1018,7 @@ export default function Profile() {
                             }`}
                             onClick={() => setBannerURL(nft.image)}
                           >
-                            <img 
+                            <img loading="lazy"
                               src={nft.image} 
                               alt={nft.title} 
                               className="w-full h-full object-cover"
@@ -1054,7 +1054,7 @@ export default function Profile() {
                       </div>
                       {bannerURL && (
                         <div className="mt-2 rounded-md overflow-hidden">
-                          <img 
+                          <img loading="lazy"
                             src={bannerURL} 
                             alt="Banner Preview" 
                             className="w-full h-32 object-cover"
@@ -1106,7 +1106,7 @@ export default function Profile() {
                             }`}
                             onClick={() => setProfileImageURL(nft.image)}
                           >
-                            <img 
+                            <img loading="lazy"
                               src={nft.image} 
                               alt={nft.title} 
                               className="w-full h-full object-cover"
@@ -1142,7 +1142,7 @@ export default function Profile() {
                       </div>
                       {profileImageURL && (
                         <div className="mt-2 flex justify-center">
-                          <img 
+                          <img loading="lazy"
                             src={profileImageURL} 
                             alt="Profile Preview" 
                             className="w-32 h-32 rounded-full object-cover"
@@ -1444,8 +1444,8 @@ export default function Profile() {
               {followingList.map((following) => (
                 <div key={following.address} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-md transition-colors">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-muted">
-                      <AvatarImage 
+                    <Avatar className="h-10 w-10 border border-muted " >
+                      <AvatarImage loading="lazy"
                         src={following.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${following.address}`} 
                         alt={following.username || formatAddress(following.address)} 
                       />
