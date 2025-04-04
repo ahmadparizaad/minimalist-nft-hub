@@ -69,14 +69,17 @@ export default function Marketplace() {
   }, [location.search]);
 
   useEffect(() => {
-    const fetchNFTs = async () => {
+    const fetchMarketplaceData = async () => {
       setIsLoading(true);
+
       try {
-        // Fetch NFTs from backend API instead of blockchain
-        const response = await nftAPI.getAllNFTs();
-        console.log(response.data)
-        const fetchedNFTs = response.data || [];
-  
+        // Fetch NFTs and metadata (categories, rarities) in parallel
+        const [nftsResponse] = await Promise.all([
+          nftAPI.getAllNFTs(), // Fetch all NFTs
+        ]);
+
+        const fetchedNFTs = nftsResponse?.data || [];
+
         if (!fetchedNFTs.length) {
           setNfts([]);
           setFilteredNfts([]);
@@ -84,25 +87,24 @@ export default function Marketplace() {
           setAvailableRarities([]);
           return;
         }
-  
+
         setNfts(fetchedNFTs);
-        
-        // Extract available categories and rarities - add explicit type casting
-        const categories = [...new Set(fetchedNFTs.map((nft: NFT) => nft.category))] as string[];
-        const rarities = [...new Set(fetchedNFTs.map((nft: NFT) => nft.rarity))] as string[];
-        
+
+        // Extract available categories and rarities
+        const categories = [...new Set(fetchedNFTs.map((nft) => nft.category))] as string[];
+        const rarities = [...new Set(fetchedNFTs.map((nft) => nft.rarity))] as string[];
+
         setAvailableCategories(categories);
         setAvailableRarities(rarities);
-  
       } catch (error) {
-        console.error("Error fetching NFTs:", error);
-        toast.error("Failed to load NFTs");
+        console.error("Error fetching marketplace data:", error);
+        toast.error("Failed to load marketplace data");
       } finally {
         setIsLoading(false);
       }
     };
-  
-    fetchNFTs();
+
+    fetchMarketplaceData();
   }, []);
 
   // Apply filters when they change
