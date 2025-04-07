@@ -299,9 +299,9 @@ useEffect(() => {
               className="lg:w-1/2"
             >
               <div className="flex items-center gap-4 mb-3">
-                <Badge variant="outline" className={nft.isListed ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
+                {/* <Badge variant="outline" className={nft.isListed ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
                   {nft.isListed ? "Listed" : "Not Listed"}
-                </Badge>
+                </Badge> */}
                 <Badge variant="secondary">{nft.category}</Badge>
               </div>
               
@@ -497,7 +497,7 @@ useEffect(() => {
                   {/* View on Explorer */}
                   <Button variant="outline" className="w-full" asChild>
                     <a 
-                      href={`https://explorer.skale.space/token/${contractAddress}?a=${nft.tokenId}`} 
+                      href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/0xC202B26262b4a3110d3Df2617325c41DfB62933e`} 
                       target="_blank"
                       rel="noopener"
                     >
@@ -521,7 +521,7 @@ useEffect(() => {
           <DialogFooter>
             <Button asChild>
               <a
-                href="https://testnet.portal.skale.space/bridge"
+                href="https://testnet.portal.skale.space/bridge?from=mainnet&to=giant-half-dual-testnet&token=usdc&type=erc20"
                 target="_blank"
                 rel="noopener"
               >

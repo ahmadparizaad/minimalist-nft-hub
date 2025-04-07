@@ -13,7 +13,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 
 export function WalletButton() {
-  const { web3State, connectWallet, disconnectWallet, requestSFuel } = useWeb3();
+  const { web3State, connectWallet, disconnectWallet, requestSFuel, updateBalances } = useWeb3();
   const { isConnected, account, sFuelBalance, usdcBalance, isLoading, hasRequestedSFuel } = web3State;
   const navigate = useNavigate();
 
@@ -37,23 +37,14 @@ export function WalletButton() {
             My Account
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="flex justify-between">
+          <DropdownMenuItem 
+            className="flex justify-between cursor-pointer"
+            onClick={updateBalances}
+          >
             <span>Balance:</span>
             <span className="font-medium">{usdcBalance.toFixed(2)} USDC</span>
           </DropdownMenuItem>
-          {/* <DropdownMenuItem className="flex justify-between">
-            <span>sFuel:</span>
-            <span className="font-medium">{sFuelBalance.toFixed(4)}</span>
-          </DropdownMenuItem> */}
           <DropdownMenuSeparator />
-          {/* <DropdownMenuItem 
-            disabled={hasRequestedSFuel || isLoading}
-            onClick={() => requestSFuel()}
-            className="cursor-pointer"
-          >
-            <CircleDollarSign className="mr-2 h-4 w-4" />
-            <span>{isLoading ? 'Requesting...' : 'Request sFuel'}</span>
-          </DropdownMenuItem> */}
           <DropdownMenuItem 
             onClick={() => disconnectWallet()}
             className="cursor-pointer text-red-500 focus:text-red-500"

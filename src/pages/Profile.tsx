@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import Jazzicon from "@metamask/jazzicon";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
@@ -409,75 +410,54 @@ export default function Profile() {
   // Fetch followers and following lists
   const fetchFollowersList = async () => {
     if (!profileAddress) return;
-    
+
     setIsLoadingFollowers(true);
     try {
-      // Make a direct API call to get followers
       const response = await userAPI.getUserByAddress(profileAddress);
-      
+
       if (response && response.data) {
-        // Handle the case where followers is an array of addresses
-        if (response.data.followers && Array.isArray(response.data.followers)) {
-          const followersArray = response.data.followers;
-          
-          if (followersArray.length > 0) {
-            const fetchedFollowers = [];
-            
-            for (const followerAddress of followersArray) {
-              try {
-                const followerResponse = await userAPI.getUserByAddress(followerAddress);
-                // Check if current user is following this follower
-                let isFollowingThisUser = false;
-                if (account) {
-                  const followStatusResponse = await userAPI.getFollowStatus(account, followerAddress);
-                  isFollowingThisUser = followStatusResponse?.isFollowing || false;
-                }
-                
-                if (followerResponse && followerResponse.data) {
-                  fetchedFollowers.push({
-                    address: followerAddress,
-                    username: followerResponse.data.username || followerResponse.data.name,
-                    profileImage: followerResponse.data.profileImage,
-                    isFollowing: isFollowingThisUser
-                  });
-                } else {
-                  fetchedFollowers.push({
-                    address: followerAddress,
-                    isFollowing: isFollowingThisUser
-                  });
-                }
-              } catch (error) {
-                console.error(`Error fetching follower ${followerAddress}:`, error);
-                fetchedFollowers.push({
-                  address: followerAddress,
-                  isFollowing: false
-                });
-              }
-            }
-            
-            setFollowersList(fetchedFollowers);
-          } else {
-            // Empty followers array
-            setFollowersList([]);
+        const followersArray = Array.isArray(response.data.followers) ? response.data.followers : [];
+        if (followersArray.length > 0) {
+          // Batch API calls to reduce time
+          const batchSize = 10; // Adjust batch size as needed
+          const batches = [];
+          for (let i = 0; i < followersArray.length; i += batchSize) {
+            const batch = followersArray.slice(i, i + batchSize);
+            batches.push(
+              Promise.all(
+                batch.map(async (followerAddress) => {
+                  try {
+                    const followerResponse = await userAPI.getUserByAddress(followerAddress);
+                    const isFollowingThisUser =
+                      account &&
+                      (await userAPI.getFollowStatus(account, followerAddress))?.isFollowing;
+
+                    return {
+                      address: followerAddress,
+                      username: followerResponse?.data?.username || followerResponse?.data?.name,
+                      profileImage: followerResponse?.data?.profileImage,
+                      isFollowing: isFollowingThisUser || false,
+                    };
+                  } catch (error) {
+                    console.error(`Error fetching follower ${followerAddress}:`, error);
+                    return { address: followerAddress, isFollowing: false };
+                  }
+                })
+              )
+            );
           }
+
+          const fetchedFollowers = (await Promise.all(batches)).flat();
+          setFollowersList(fetchedFollowers);
         } else {
-          // Handle the case where followers is not an array (just a count)
-          console.log("No followers array available, just a count:", 
-            typeof response.data.followersCount === 'number' 
-              ? response.data.followersCount 
-              : typeof response.data.followers === 'number' 
-                ? response.data.followers 
-                : 0
-          );
           setFollowersList([]);
         }
       } else {
-        // No user data
         setFollowersList([]);
       }
     } catch (error) {
-      console.error('Error fetching followers:', error);
-      toast.error('Failed to load followers');
+      console.error("Error fetching followers:", error);
+      toast.error("Failed to load followers");
       setFollowersList([]);
     } finally {
       setIsLoadingFollowers(false);
@@ -609,6 +589,12 @@ export default function Profile() {
     setFollowingOpen(true);
   };
 
+  const generateJazzicon = (address: string) => {
+    const seed = parseInt(address.slice(2, 10), 16); // Generate a seed from the address
+    const jazzicon = Jazzicon(32, seed); // Create a Jazzicon with size 32
+    return jazzicon.outerHTML; // Return the HTML string
+  };
+
   if (!profileAddress) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -693,11 +679,20 @@ export default function Profile() {
           >
             <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
               <div className="relative">
-                <img
-                  src={creator?.profileImage || creator?.avatar || `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`}
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full border-4 border-background object-cover"
-                />
+                {creator?.profileImage ? (
+                  <img
+                    src={creator.profileImage}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-full border-4 border-background object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-32 h-32 rounded-full border-4 border-background"
+                    dangerouslySetInnerHTML={{
+                      __html: generateJazzicon(profileAddress || "0x0000000000000000"),
+                    }}
+                  />
+                )}
                 {creator?.verified && (
                   <div className="absolute bottom-1 right-1 bg-primary text-white rounded-full p-1">
                     <CheckCircle2 className="h-5 w-5" />
@@ -1082,8 +1077,8 @@ export default function Profile() {
                 <span className="ml-2 text-xs bg-muted-foreground/20 px-2 py-0.5 rounded-full">
                   {transactions.length}
                 </span>
-              </TabsTrigger>
-            </TabsList>
+                </TabsTrigger>
+              </TabsList>
 
             <TabsContent value="owned">
               {ownedNFTs.length > 0 ? (
@@ -1137,7 +1132,7 @@ export default function Profile() {
 
             <TabsContent value="created" className="mt-6">
               {createdNFTs.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {createdNFTs.map((nft, index) => (
                     <div key={nft._id} className="relative">
                       <NFTCard key={nft._id} nft={nft} index={index} />
