@@ -74,11 +74,9 @@ export default function Marketplace() {
 
       try {
         // Fetch NFTs and metadata (categories, rarities) in parallel
-        const [nftsResponse] = await Promise.all([
-          nftAPI.getAllNFTs(), // Fetch all NFTs
-        ]);
-
-        const fetchedNFTs = nftsResponse?.data || [];
+        const response = await nftAPI.getAllNFTs();
+         console.log(response.data)
+         const fetchedNFTs = response.data || [];
 
         if (!fetchedNFTs.length) {
           setNfts([]);

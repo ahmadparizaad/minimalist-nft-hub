@@ -258,7 +258,7 @@ useEffect(() => {
                   src={nft.image}
                   alt={nft.title}
                   className="w-full h-full object-cover"
-                  loading="eager"
+                  
                 />
                 <div className="absolute top-4 left-4 flex gap-2">
                   <img src="/skale-logo.svg" alt="SKALE" className="h-7 w-7" />
@@ -316,17 +316,10 @@ useEffect(() => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.creator}`}>
-<<<<<<< HEAD
                             <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
                               <AvatarImage loading="lazy"
                                 src={creatorProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.creator}`} 
                                 alt={`${formatAddress(nft.creator)} profile`} 
-=======
-                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary">
-                              <AvatarImage 
-                                src={creatorProfile?.profileImage || getFallbackImage(nft.creator)} 
-                                alt={formatAddress(nft.creator)} 
->>>>>>> 9275fe6ca5c9b206c87608449517be2552dc6560
                               />
                               <AvatarFallback>{nft.creator.substring(0, 2)}</AvatarFallback>
                             </Avatar>
@@ -335,7 +328,14 @@ useEffect(() => {
                         <TooltipContent>View Creator Profile</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    <p className="font-medium">{formatAddress(nft.creator)}</p>
+                    <a 
+                      href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${nft.creator}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-500 hover:underline"
+                    >
+                      {formatAddress(nft.creator)}
+                    </a>                  
                   </div>
                 </div>
                 
@@ -346,17 +346,10 @@ useEffect(() => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.owner}`}>
-<<<<<<< HEAD
                             <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
                               <AvatarImage loading="lazy"
                                 src={ownerProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.owner}`} 
                                 alt={`${formatAddress(nft.owner)} profile`} 
-=======
-                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary">
-                              <AvatarImage 
-                                src={ownerProfile?.profileImage || getFallbackImage(nft.owner)} 
-                                alt={formatAddress(nft.owner)} 
->>>>>>> 9275fe6ca5c9b206c87608449517be2552dc6560
                               />
                               <AvatarFallback>{nft.owner.substring(0, 2)}</AvatarFallback>
                             </Avatar>
@@ -365,7 +358,14 @@ useEffect(() => {
                         <TooltipContent>View Owner Profile</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    <p className="font-medium">{formatAddress(nft.owner)}</p>
+                    <a 
+                      href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${nft.creator}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-500 hover:underline"
+                    >
+                      {formatAddress(nft.owner)}
+                    </a>
                   </div>
                 </div>
               </div>

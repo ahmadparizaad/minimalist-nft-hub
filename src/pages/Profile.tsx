@@ -1272,7 +1272,15 @@ export default function Profile() {
                       <AvatarFallback>{follower.address.substring(0, 2)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{follower.username || formatAddress(follower.address)}</p>
+                      {/* <p className="font-medium">{follower.username || formatAddress(follower.address)}</p> */}
+                      <a 
+                        href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${follower.address}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="font-medium text-blue-500 hover:underline"
+                      >
+                        {follower.username || formatAddress(follower.address)}
+                      </a>
                       <p className="text-xs text-muted-foreground">{formatAddress(follower.address)}</p>
                     </div>
                   </div>

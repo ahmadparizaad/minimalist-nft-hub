@@ -71,7 +71,8 @@ export function WalletButton() {
       ) : (
         <span className="flex items-center">
           <Wallet className="mr-2 h-4 w-4" />
-          Connect Wallet
+          <span className="hidden md:inline">Connect Wallet</span>
+          <span className="md:hidden">Connect</span>
         </span>
       )}
     </Button>
