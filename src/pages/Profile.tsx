@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { NFTCard } from "@/components/NFTCard";
@@ -44,7 +44,6 @@ export default function Profile() {
   const [createdNFTs, setCreatedNFTs] = useState<NFT[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("owned");
   const [allNfts, setAllNfts] = useState<NFT[]>([]); // All NFTs
   const [profileNfts, setProfileNfts] = useState<NFT[]>([]); // Profile-specific NFTs
   const isOwner = address === account || !address;
@@ -595,6 +594,25 @@ export default function Profile() {
     return jazzicon.outerHTML; // Return the HTML string
   };
 
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("owned");
+
+  // Synchronize activeTab with the URL query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab && ["owned", "created", "activity"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  // Update the URL when the tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    navigate(`?tab=${tab}`);
+  };
+
   if (!profileAddress) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -1058,7 +1076,7 @@ export default function Profile() {
           </motion.div>
 
           {/* Tabs */}
-          <Tabs defaultValue="owned" value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <Tabs defaultValue="owned" value={activeTab} onValueChange={handleTabChange} className="mb-8">
             <TabsList className="w-full">
               <TabsTrigger value="owned" className="flex-1">
                 Owned

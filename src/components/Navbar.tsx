@@ -3,7 +3,7 @@ import { WalletButton } from "./WalletButton";
 import { useState, useEffect } from "react";
 import { Search, Menu, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion"; // Import AnimatePresence
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -27,8 +27,8 @@ export function Navbar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
-          ? "py-2 bg-white/80 backdrop-blur-md shadow-sm" 
-          : "py-3 bg-transparent"
+          ? "py-2 bg-white shadow-sm" 
+          : "py-3 bg-white " // Ensure consistent background
       }`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
@@ -70,49 +70,51 @@ export function Navbar() {
       </div>
 
       {/* Sliding Menu */}
-      {menuOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 bg-black/50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          onClick={() => setMenuOpen(false)}
-        >
+      <AnimatePresence>
+        {menuOpen && (
           <motion.div
-            className="fixed top-0 left-0 h-full w-2/5 bg-white shadow-lg"
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the menu
+            className="fixed inset-0 z-50 bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => setMenuOpen(false)}
           >
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <span className="text-lg font-bold">Menu</span>
-              <button
-                className="p-2 rounded-md hover:bg-muted/50"
-                onClick={() => setMenuOpen(false)}
-              >
-                <X className="h-6 w-6 text-muted-foreground" />
-              </button>
-            </div>
-            <nav className="flex flex-col p-4 space-y-4">
-              <NavLink to="/" current={location.pathname} onClick={() => setMenuOpen(false)}>
-                Home
-              </NavLink>
-              <NavLink to="/marketplace" current={location.pathname} onClick={() => setMenuOpen(false)}>
-                Marketplace
-              </NavLink>
-              <NavLink to="/mint" current={location.pathname} onClick={() => setMenuOpen(false)}>
-                Create
-              </NavLink>
-              <NavLink to="/profile" current={location.pathname} onClick={() => setMenuOpen(false)}>
-                Profile
-              </NavLink>
-            </nav>
+            <motion.div
+              className="fixed top-0 left-0 h-full w-3/5 bg-white shadow-lg rounded-tr-2xl rounded-br-2xl"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }} // Slide-out animation
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the menu
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <span className="text-lg font-bold">Menu</span>
+                <button
+                  className="p-2 rounded-md hover:bg-muted/50"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <X className="h-6 w-6 text-muted-foreground" />
+                </button>
+              </div>
+              <nav className="flex flex-col p-4 space-y-4">
+                <NavLink to="/" current={location.pathname} onClick={() => setMenuOpen(false)}>
+                  Home
+                </NavLink>
+                <NavLink to="/marketplace" current={location.pathname} onClick={() => setMenuOpen(false)}>
+                  Marketplace
+                </NavLink>
+                <NavLink to="/mint" current={location.pathname} onClick={() => setMenuOpen(false)}>
+                  Create
+                </NavLink>
+                <NavLink to="/profile" current={location.pathname} onClick={() => setMenuOpen(false)}>
+                  Profile
+                </NavLink>
+              </nav>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 }

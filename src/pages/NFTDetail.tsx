@@ -396,7 +396,8 @@ useEffect(() => {
                             </div>
                           ) : (
                             'Buy Now'
-                          )}                        </Button>
+                          )}                        
+                          </Button>
                       )}
                     </div>
                     {!isConnected && (
