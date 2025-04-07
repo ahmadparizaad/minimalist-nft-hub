@@ -254,7 +254,7 @@ useEffect(() => {
               className="lg:w-1/2"
             >
               <div className="relative aspect-square overflow-hidden rounded-2xl border border-border/50 shadow-sm">
-                <img
+                <img loading="lazy"
                   src={nft.image}
                   alt={nft.title}
                   className="w-full h-full object-cover"
@@ -316,10 +316,17 @@ useEffect(() => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.creator}`}>
+<<<<<<< HEAD
+                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                              <AvatarImage loading="lazy"
+                                src={creatorProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.creator}`} 
+                                alt={`${formatAddress(nft.creator)} profile`} 
+=======
                             <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary">
                               <AvatarImage 
                                 src={creatorProfile?.profileImage || getFallbackImage(nft.creator)} 
                                 alt={formatAddress(nft.creator)} 
+>>>>>>> 9275fe6ca5c9b206c87608449517be2552dc6560
                               />
                               <AvatarFallback>{nft.creator.substring(0, 2)}</AvatarFallback>
                             </Avatar>
@@ -339,10 +346,17 @@ useEffect(() => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Link to={`/profile/${nft.owner}`}>
+<<<<<<< HEAD
+                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                              <AvatarImage loading="lazy"
+                                src={ownerProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.owner}`} 
+                                alt={`${formatAddress(nft.owner)} profile`} 
+=======
                             <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary">
                               <AvatarImage 
                                 src={ownerProfile?.profileImage || getFallbackImage(nft.owner)} 
                                 alt={formatAddress(nft.owner)} 
+>>>>>>> 9275fe6ca5c9b206c87608449517be2552dc6560
                               />
                               <AvatarFallback>{nft.owner.substring(0, 2)}</AvatarFallback>
                             </Avatar>
