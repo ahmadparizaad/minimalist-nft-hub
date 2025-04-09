@@ -105,6 +105,7 @@ const Web3Context = createContext<{
   getNFTDetails: (tokenId: number) => Promise<unknown>;
   getMyNFTs: () => Promise<unknown[]>;
   getTransactionHistory: (tokenId: number) => Promise<string[]>;
+  updateBalances: () => Promise<void>;
 }>({
   web3State: initialState,
   connectWallet: async () => {},
@@ -117,6 +118,7 @@ const Web3Context = createContext<{
   getNFTDetails: async () => ({}),
   getMyNFTs: async () => [],
   getTransactionHistory: async () => [],
+  updateBalances: async () => {}
 });
 
 // Provider component
@@ -851,6 +853,81 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // useEffect(() => {
+  //   const updateBalances = async () => {
+  //     if (provider && web3State.account) {
+  //       try {
+  //         // Update sFuel balance
+  //         const newSFuelBalance = parseFloat(
+  //           ethers.utils.formatEther(await provider.getBalance(web3State.account))
+  //         );
+
+  //         // Update USDC balance
+  //         const usdcContract = new ethers.Contract(
+  //           USDC_CONTRACT_ADDRESS,
+  //           ['function balanceOf(address owner) view returns (uint256)'],
+  //           provider
+  //         );
+  //         const newUSDCBalance = parseFloat(
+  //           ethers.utils.formatUnits(await usdcContract.balanceOf(web3State.account), 6)
+  //         );
+
+  //         setWeb3State((prev) => ({
+  //           ...prev,
+  //           sFuelBalance: newSFuelBalance,
+  //           usdcBalance: newUSDCBalance,
+  //         }));
+  //       } catch (error) {
+  //         console.error("Error updating balances:", error);
+  //       }
+  //     }
+  //   };
+
+  //   // Listen for account changes or balance updates
+  //   if (window.ethereum) {
+  //     window.ethereum.on('accountsChanged', updateBalances);
+  //     window.ethereum.on('chainChanged', updateBalances);
+  //   }
+
+  //   // Cleanup listeners on unmount
+  //   return () => {
+  //     if (window.ethereum) {
+  //       window.ethereum.removeListener('accountsChanged', updateBalances);
+  //       window.ethereum.removeListener('chainChanged', updateBalances);
+  //     }
+  //   };
+  // }, [provider, web3State.account]);
+
+// Function to update balances
+const updateBalances = async () => {
+  if (provider && web3State.account) {
+    try {
+      // Update sFuel balance
+      const newSFuelBalance = parseFloat(
+        ethers.utils.formatEther(await provider.getBalance(web3State.account))
+      );
+
+      // Update USDC balance
+      const usdcContract = new ethers.Contract(
+        USDC_CONTRACT_ADDRESS,
+        ['function balanceOf(address owner) view returns (uint256)'],
+        provider
+      );
+      const newUSDCBalance = parseFloat(
+        ethers.utils.formatUnits(await usdcContract.balanceOf(web3State.account), 6)
+      );
+
+      setWeb3State((prev) => ({
+        ...prev,
+        sFuelBalance: newSFuelBalance,
+        usdcBalance: newUSDCBalance,
+      }));
+    } catch (error) {
+      console.error("Error updating balances:", error);
+    }
+  }
+};
+
   return (
     <Web3Context.Provider
       value={{
@@ -864,7 +941,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         getAllNFTs,
         getNFTDetails,
         getMyNFTs,
-        getTransactionHistory
+        getTransactionHistory,
+        updateBalances,
       }}
     >
       {children}

@@ -154,5 +154,7 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		// require('tailwind-scrollbar')({ preferredStrategy: 'pseudoelements' }),
+		require("tailwindcss-animate")],
 } satisfies Config;

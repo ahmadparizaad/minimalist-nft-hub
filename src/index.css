@@ -173,3 +173,21 @@
     animation-delay: 500ms;
   }
 }
+
+/* styles/globals.css */
+@layer utilities {
+  .scrollbar-rounded::-webkit-scrollbar {
+    width: 8px;
+  }
+  .scrollbar-rounded::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  .scrollbar-rounded::-webkit-scrollbar-thumb {
+    background: #d8d8d8;
+    border-radius: 4px;
+  }
+  .scrollbar-rounded::-webkit-scrollbar-thumb:hover {
+    background: #8f8e8e;
+  }
+}

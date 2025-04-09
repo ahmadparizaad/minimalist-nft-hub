@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -38,7 +38,31 @@ export default function NFTDetail() {
   const [showInsufficientFundsDialog, setShowInsufficientFundsDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showEnjoyingDialog, setShowEnjoyingDialog] = useState(false);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
+
+  const loaderRef = useRef<HTMLDivElement>(null);
+const [hasMore, setHasMore] = useState(true);
+
+useEffect(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && hasMore) {
+        setCurrentPage(prev => prev + 1);
+      }
+    },
+    { threshold: 1.0 }
+  );
+
+  if (loaderRef.current) {
+    observer.observe(loaderRef.current);
+  }
+
+  return () => observer.disconnect();
+}, [hasMore]);
+
+useEffect(() => {
+  setHasMore(currentPage * itemsPerPage < transactions.length);
+}, [transactions, currentPage]);
 
   const isOwner = useMemo(
     () => isConnected && account?.toLowerCase() === nft?.owner?.toLowerCase(),
@@ -222,6 +246,7 @@ export default function NFTDetail() {
       <Navbar />
       <main className="flex-1 pt-20 px-4">
         <div className="container mx-auto max-w-6xl py-12">
+<<<<<<< HEAD
           <div className="flex flex-col gap-8 lg:flex-row">
             <div className="w-full lg:w-2/3">
               <div className="relative rounded-xl overflow-hidden">
@@ -229,8 +254,24 @@ export default function NFTDetail() {
                   src={nft.image || getFallbackImage(nft.creator)} 
                   alt={nft.name} 
                   className="object-cover w-full h-96" 
+=======
+          <div className="flex flex-col lg:flex-row gap-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="lg:w-1/2"
+            >
+              <div className="relative aspect-square overflow-hidden rounded-2xl border border-border/50 shadow-sm">
+                <img loading="lazy"
+                  src={nft.image}
+                  alt={nft.title}
+                  className="w-full h-full object-cover"
+                  
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
                 />
               </div>
+<<<<<<< HEAD
               <div className="mt-6">
                 <h2 className="text-3xl font-semibold">{nft.name}</h2>
                 <div className="mt-4 text-xl text-muted">{formatPrice(nft.price)} USDC</div>
@@ -254,6 +295,132 @@ export default function NFTDetail() {
                         </Tooltip>
                       </TooltipProvider>
                       <p className="text-sm">Owned by {nft.owner}</p>
+=======
+              
+              <div className="mt-6 grid grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Token ID</p>
+                  <p className="font-medium">#{nft.tokenId}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Royalty</p>
+                  <p className="font-medium">{nft.royaltyFee.toFixed(1)}%</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Created</p>
+                  <p className="font-medium">{new Date(nft.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="lg:w-1/2"
+            >
+              <div className="flex items-center gap-4 mb-3">
+                {/* <Badge variant="outline" className={nft.isListed ? "border-green-500 text-green-500" : "border-red-500 text-red-500"}>
+                  {nft.isListed ? "Listed" : "Not Listed"}
+                </Badge> */}
+                <Badge variant="secondary">{nft.category}</Badge>
+              </div>
+              
+              <h1 className="text-3xl font-display font-bold mb-3">{nft.title}</h1>
+              <p className="text-muted-foreground mb-8">{nft.description}</p>
+
+              <div className="flex flex-col md:flex-row md:items-center gap-6 mb-6">
+                <div className="flex flex-col">
+                  <p className="text-sm text-muted-foreground mb-1">Creator</p>
+                  <div className="flex items-center gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link to={`/profile/${nft.creator}`}>
+                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                              <AvatarImage loading="lazy"
+                                src={creatorProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.creator}`} 
+                                alt={`${formatAddress(nft.creator)} profile`} 
+                              />
+                              <AvatarFallback>{nft.creator.substring(0, 2)}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>View Creator Profile</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <a 
+                      href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${nft.creator}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-500 hover:underline"
+                    >
+                      {formatAddress(nft.creator)}
+                    </a>                  
+                  </div>
+                </div>
+                
+                <div className="flex flex-col">
+                  <p className="text-sm text-muted-foreground mb-1">Owner</p>
+                  <div className="flex items-center gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Link to={`/profile/${nft.owner}`}>
+                            <Avatar className="h-8 w-8 hover:ring-2 hover:ring-primary transition-all cursor-pointer">
+                              <AvatarImage loading="lazy"
+                                src={ownerProfile?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${nft.owner}`} 
+                                alt={`${formatAddress(nft.owner)} profile`} 
+                              />
+                              <AvatarFallback>{nft.owner.substring(0, 2)}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>View Owner Profile</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <a 
+                      href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${nft.creator}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-500 hover:underline"
+                    >
+                      {formatAddress(nft.owner)}
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {nft.isListed ? (
+                <Card className="mb-8">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Current Price</p>
+                        <p className="text-2xl font-display font-bold">{formatPrice(nft.price, nft.currency)}</p>
+                      </div>
+                      {isOwner ? (
+                        <Button variant="outline" className="border-green-500 text-green-500">
+                          You Own This NFT
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handlePurchase}
+                          disabled={isPurchasing || !isConnected}
+                          className="bg-primary text-white"
+                          type="button"
+                        >
+                        {isPurchasing ? (
+                            <div className="flex items-center gap-2">
+                              <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-white border-opacity-50"></span>
+                              Processing
+                            </div>
+                          ) : (
+                            'Buy Now'
+                          )}                        
+                          </Button>
+                      )}
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
                     </div>
                   )}
                 </div>
@@ -264,6 +431,7 @@ export default function NFTDetail() {
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="history">History</TabsTrigger>
                 </TabsList>
+<<<<<<< HEAD
                 <TabsContent value="details">
                   <div className="mt-4">
                     <p>{nft.description}</p>
@@ -285,8 +453,98 @@ export default function NFTDetail() {
                         ))}
                       </ul>
                     )}
+=======
+
+                <TabsContent value="history" className="mt-4">
+  <div className="space-y-4">
+    {isLoadingHistory ? (
+      <div className="text-center py-8">Loading history...</div>
+    ) : formattedTransactions.length > 0 ? (
+      <div className="border rounded-lg overflow-hidden">
+        <div className="max-h-96 overflow-y-auto scrollbar-rounded">
+          {formattedTransactions.map((tx, index) => (
+            <div 
+              key={tx.id} 
+              className="flex items-center p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors"
+              ref={index === formattedTransactions.length - 1 ? loaderRef : null}
+            >
+              {tx.type === 'mint' && <Shield className="text-blue-500 mr-3" />}
+              {tx.type === 'buy' && <ArrowRight className="text-green-500 mr-3" />}
+              <div className="flex-1">
+                <div className="flex justify-between">
+                  <p className="font-medium capitalize">{tx.type}</p>
+                  <p className="text-sm text-muted-foreground">{tx.timeAgo}</p>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <p className="text-sm">
+                    {formatAddress(tx.from)} → {formatAddress(tx.to)}
+                  </p>
+                  {tx.price > 0 && <p className="text-sm font-medium">{formatPrice(tx.price, tx.currency)}</p>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div className="text-center py-8 text-muted-foreground">
+        No transaction history found
+      </div>
+    )}
+  </div>
+</TabsContent>
+
+                <TabsContent value="details" className="mt-4">
+                <div className="space-y-4">
+                  {/* Contract Address */}
+                  <div className="flex justify-between p-3">
+                    <p>Contract Address</p>
+                    <p className="font-mono">{formatAddress(contractAddress)}</p>
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
                   </div>
-                </TabsContent>
+
+                  {/* Token ID */}
+                  <div className="flex justify-between p-3">
+                    <p>Token ID</p>
+                    <p className="font-mono">#{nft.tokenId}</p>
+                  </div>
+
+                  {/* Token Standard */}
+                  <div className="flex justify-between p-3">
+                    <p>Token Standard</p>
+                    <p>{nft.tokenStandard}</p>
+                  </div>
+
+                  {/* Royalty Fee */}
+                  <div className="flex justify-between p-3">
+                    <p>Royalty Fee</p>
+                    <p>{nft.royaltyFee.toFixed(1)}%</p>
+                  </div>
+
+                  {/* Created Date */}
+                  <div className="flex justify-between p-3">
+                    <p>Created Date</p>
+                    <p>{new Date(nft.createdAt).toLocaleDateString()}</p>
+                  </div>
+
+                  {/* Category */}
+                  <div className="flex justify-between p-3">
+                    <p>Category</p>
+                    <p>{nft.category}</p>
+                  </div>
+
+                  {/* View on Explorer */}
+                  <Button variant="outline" className="w-full" asChild>
+                    <a 
+                      href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/0xC202B26262b4a3110d3Df2617325c41DfB62933e`} 
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      View on Explorer <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              </TabsContent>
               </Tabs>
 
               {isPurchasing ? (
@@ -302,6 +560,45 @@ export default function NFTDetail() {
           </div>
         </div>
       </main>
+<<<<<<< HEAD
+=======
+
+      <Dialog open={showInsufficientFundsDialog} onOpenChange={setShowInsufficientFundsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insufficient Funds</DialogTitle>
+          </DialogHeader>
+          <p>Bridge USDC tokens to the SKALE testnet.</p>
+          <DialogFooter>
+            <Button asChild>
+              <a
+                href="https://testnet.portal.skale.space/bridge?from=mainnet&to=giant-half-dual-testnet&token=usdc&type=erc20"
+                target="_blank"
+                rel="noopener"
+              >
+                Bridge Funds
+              </a>
+            </Button>
+            <Button variant="outline" onClick={() => setShowInsufficientFundsDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEnjoyingDialog} onOpenChange={setShowEnjoyingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Congratulations!</DialogTitle>
+          </DialogHeader>
+          <p>You have successfully purchased this NFT. Enjoy your new digital asset! 😍</p>
+          <DialogFooter>
+            <Button onClick={() => setShowEnjoyingDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
       <Footer />
     </div>
   );

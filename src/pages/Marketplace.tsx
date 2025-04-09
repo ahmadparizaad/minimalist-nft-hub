@@ -74,11 +74,9 @@ export default function Marketplace() {
 
       try {
         // Fetch NFTs and metadata (categories, rarities) in parallel
-        const [nftsResponse] = await Promise.all([
-          nftAPI.getAllNFTs(), // Fetch all NFTs
-        ]);
-
-        const fetchedNFTs = nftsResponse?.data || [];
+        const response = await nftAPI.getAllNFTs();
+         console.log(response.data)
+         const fetchedNFTs = response.data || [];
 
         if (!fetchedNFTs.length) {
           setNfts([]);
@@ -409,7 +407,7 @@ export default function Marketplace() {
       <Navbar />
 
       <main className="flex-1 pt-20 px-4 pb-16">
-        <div className="container mx-auto max-w-6xl py-12">
+        <div className="container mx-auto max-w-7xl py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

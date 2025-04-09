@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { NFTCard } from "@/components/NFTCard";
@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import Jazzicon from "@metamask/jazzicon";
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
@@ -43,7 +44,6 @@ export default function Profile() {
   const [createdNFTs, setCreatedNFTs] = useState<NFT[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("owned");
   const [allNfts, setAllNfts] = useState<NFT[]>([]); // All NFTs
   const [profileNfts, setProfileNfts] = useState<NFT[]>([]); // Profile-specific NFTs
   const isOwner = address === account || !address;
@@ -409,75 +409,54 @@ export default function Profile() {
   // Fetch followers and following lists
   const fetchFollowersList = async () => {
     if (!profileAddress) return;
-    
+
     setIsLoadingFollowers(true);
     try {
-      // Make a direct API call to get followers
       const response = await userAPI.getUserByAddress(profileAddress);
-      
+
       if (response && response.data) {
-        // Handle the case where followers is an array of addresses
-        if (response.data.followers && Array.isArray(response.data.followers)) {
-          const followersArray = response.data.followers;
-          
-          if (followersArray.length > 0) {
-            const fetchedFollowers = [];
-            
-            for (const followerAddress of followersArray) {
-              try {
-                const followerResponse = await userAPI.getUserByAddress(followerAddress);
-                // Check if current user is following this follower
-                let isFollowingThisUser = false;
-                if (account) {
-                  const followStatusResponse = await userAPI.getFollowStatus(account, followerAddress);
-                  isFollowingThisUser = followStatusResponse?.isFollowing || false;
-                }
-                
-                if (followerResponse && followerResponse.data) {
-                  fetchedFollowers.push({
-                    address: followerAddress,
-                    username: followerResponse.data.username || followerResponse.data.name,
-                    profileImage: followerResponse.data.profileImage,
-                    isFollowing: isFollowingThisUser
-                  });
-                } else {
-                  fetchedFollowers.push({
-                    address: followerAddress,
-                    isFollowing: isFollowingThisUser
-                  });
-                }
-              } catch (error) {
-                console.error(`Error fetching follower ${followerAddress}:`, error);
-                fetchedFollowers.push({
-                  address: followerAddress,
-                  isFollowing: false
-                });
-              }
-            }
-            
-            setFollowersList(fetchedFollowers);
-          } else {
-            // Empty followers array
-            setFollowersList([]);
+        const followersArray = Array.isArray(response.data.followers) ? response.data.followers : [];
+        if (followersArray.length > 0) {
+          // Batch API calls to reduce time
+          const batchSize = 10; // Adjust batch size as needed
+          const batches = [];
+          for (let i = 0; i < followersArray.length; i += batchSize) {
+            const batch = followersArray.slice(i, i + batchSize);
+            batches.push(
+              Promise.all(
+                batch.map(async (followerAddress) => {
+                  try {
+                    const followerResponse = await userAPI.getUserByAddress(followerAddress);
+                    const isFollowingThisUser =
+                      account &&
+                      (await userAPI.getFollowStatus(account, followerAddress))?.isFollowing;
+
+                    return {
+                      address: followerAddress,
+                      username: followerResponse?.data?.username || followerResponse?.data?.name,
+                      profileImage: followerResponse?.data?.profileImage,
+                      isFollowing: isFollowingThisUser || false,
+                    };
+                  } catch (error) {
+                    console.error(`Error fetching follower ${followerAddress}:`, error);
+                    return { address: followerAddress, isFollowing: false };
+                  }
+                })
+              )
+            );
           }
+
+          const fetchedFollowers = (await Promise.all(batches)).flat();
+          setFollowersList(fetchedFollowers);
         } else {
-          // Handle the case where followers is not an array (just a count)
-          console.log("No followers array available, just a count:", 
-            typeof response.data.followersCount === 'number' 
-              ? response.data.followersCount 
-              : typeof response.data.followers === 'number' 
-                ? response.data.followers 
-                : 0
-          );
           setFollowersList([]);
         }
       } else {
-        // No user data
         setFollowersList([]);
       }
     } catch (error) {
-      console.error('Error fetching followers:', error);
-      toast.error('Failed to load followers');
+      console.error("Error fetching followers:", error);
+      toast.error("Failed to load followers");
       setFollowersList([]);
     } finally {
       setIsLoadingFollowers(false);
@@ -609,6 +588,31 @@ export default function Profile() {
     setFollowingOpen(true);
   };
 
+  const generateJazzicon = (address: string) => {
+    const seed = parseInt(address.slice(2, 10), 16); // Generate a seed from the address
+    const jazzicon = Jazzicon(32, seed); // Create a Jazzicon with size 32
+    return jazzicon.outerHTML; // Return the HTML string
+  };
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("owned");
+
+  // Synchronize activeTab with the URL query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab && ["owned", "created", "activity"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  // Update the URL when the tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    navigate(`?tab=${tab}`);
+  };
+
   if (!profileAddress) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -693,11 +697,20 @@ export default function Profile() {
           >
             <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
               <div className="relative">
-                <img loading="lazy"
-                  src={creator?.profileImage || creator?.avatar || `https://source.unsplash.com/random/300x300?profile&sig=${profileAddress}`}
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full border-4 border-background object-cover"
-                />
+                {creator?.profileImage ? (
+                  <img loading="lazy"
+                    src={creator.profileImage}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-full border-4 border-background object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-32 h-32 rounded-full border-4 border-background"
+                    dangerouslySetInnerHTML={{
+                      __html: generateJazzicon(profileAddress || "0x0000000000000000"),
+                    }}
+                  />
+                )}
                 {creator?.verified && (
                   <div className="absolute bottom-1 right-1 bg-primary text-white rounded-full p-1">
                     <CheckCircle2 className="h-5 w-5" />
@@ -1063,7 +1076,7 @@ export default function Profile() {
           </motion.div>
 
           {/* Tabs */}
-          <Tabs defaultValue="owned" value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <Tabs defaultValue="owned" value={activeTab} onValueChange={handleTabChange} className="mb-8">
             <TabsList className="w-full">
               <TabsTrigger value="owned" className="flex-1">
                 Owned
@@ -1082,8 +1095,8 @@ export default function Profile() {
                 <span className="ml-2 text-xs bg-muted-foreground/20 px-2 py-0.5 rounded-full">
                   {transactions.length}
                 </span>
-              </TabsTrigger>
-            </TabsList>
+                </TabsTrigger>
+              </TabsList>
 
             <TabsContent value="owned">
               {ownedNFTs.length > 0 ? (
@@ -1137,7 +1150,7 @@ export default function Profile() {
 
             <TabsContent value="created" className="mt-6">
               {createdNFTs.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {createdNFTs.map((nft, index) => (
                     <div key={nft._id} className="relative">
                       <NFTCard key={nft._id} nft={nft} index={index} />
@@ -1277,7 +1290,15 @@ export default function Profile() {
                       <AvatarFallback>{follower.address.substring(0, 2)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{follower.username || formatAddress(follower.address)}</p>
+                      {/* <p className="font-medium">{follower.username || formatAddress(follower.address)}</p> */}
+                      <a 
+                        href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${follower.address}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="font-medium text-blue-500 hover:underline"
+                      >
+                        {follower.username || formatAddress(follower.address)}
+                      </a>
                       <p className="text-xs text-muted-foreground">{formatAddress(follower.address)}</p>
                     </div>
                   </div>
