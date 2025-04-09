@@ -574,15 +574,15 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   };
   
   // Mint a new NFT
-  const mintNFT = async ({ 
-    ipfsHash, 
-    price, 
+  const mintNFT = async ({
+    ipfsHash,
+    price,
     royaltyFee,
     title = "My NFT",
     description = "Some Description...."
-  }: { 
-    ipfsHash: string, 
-    price: string, 
+  }: {
+    ipfsHash: string,
+    price: string,
     royaltyFee: string,
     title?: string,
     description?: string
@@ -591,104 +591,93 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       toast.error("Please connect your wallet first");
       return null;
     }
-    
+  
     try {
       setWeb3State(prev => ({ ...prev, isLoading: true }));
-      console.log("Minting NFT...");
-      const paymentToken = USDC_CONTRACT_ADDRESS; // USDC address
+  
+      const paymentToken = USDC_CONTRACT_ADDRESS;
       const tokenDecimals = 6;
-      
+  
       if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-        console.error("Invalid price:", price);
         toast.error("Price must be greater than zero");
         return null;
       }
-      
+  
       const formattedPrice = ethers.utils.parseUnits(parseFloat(price).toFixed(6), tokenDecimals);
       const formattedRoyaltyFee = Number(royaltyFee);
+  
       if (isNaN(formattedRoyaltyFee) || formattedRoyaltyFee < 0 || formattedRoyaltyFee > 255) {
-        console.error("Invalid royalty fee:", royaltyFee);
         toast.error("Royalty fee must be between 0 and 255");
         return null;
       }
-
-      // Check if sFuel is needed
+  
+      // Request sFuel if needed
       if (web3State.sFuelBalance <= 0.001) {
         console.log("Requesting sFuel...");
         await requestSFuel();
       }
-      console.log("Creating NFT...");
+  
       const contractWithSigner = contract.connect(signer);
-      console.log("Contract with signer:", contractWithSigner);
-      console.log("IPFS Hash:", ipfsHash);
-      console.log("Formatted Price:", formattedPrice.toString());
-      console.log("Royalty Fee:", royaltyFee);
-      console.log("Formatted Royalty Fee:", formattedRoyaltyFee.toString());
-      console.log("Type of formatted Royalty Fee:", typeof(formattedRoyaltyFee));
-      console.log("Payment Token:", paymentToken);
-      
+  
+      toast.loading("Please confirm transaction in your wallet...", { id: "mint-nft" });
+  
       const tx = await contractWithSigner.createToken(ipfsHash, formattedPrice, formattedRoyaltyFee, paymentToken);
-      console.log("Transaction hash:", tx.hash);
-      toast.success("Transaction submitted. Waiting for confirmation...");
-      
+  
+      toast.loading("Transaction submitted. Waiting for confirmation...", { id: "mint-nft" });
+  
       const receipt = await tx.wait();
-      
-      // Get the token ID from the Transfer event
-      const tokenId = receipt.events.find((event: { event: string; args: [string, string, ethers.BigNumber] }) => event.event === "Transfer")?.args[2].toString();
-      
+  
+      // Extract Token ID
+      const tokenId = receipt.events.find(
+        (event: { event: string; args: [string, string, ethers.BigNumber] }) =>
+          event.event === "Transfer"
+      )?.args[2].toString();
+  
       if (!tokenId) {
         throw new Error("Failed to get token ID from transaction receipt");
       }
-      
-      console.log(`Token ID: ${tokenId}`);
-      
-      // Get the created NFT details
+  
       const nftDetails = await contract.getNFTDetails(tokenId);
-      
+  
       const newNft = {
         tokenId: Number(tokenId),
-        title: title,
-        description: description,
+        title,
+        description,
         image: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
         price: parseFloat(ethers.utils.formatUnits(nftDetails.price, 6)),
         owner: nftDetails.owner,
-        creator: nftDetails.owner, // Creator is the current owner when minting
+        creator: nftDetails.owner,
         royaltyFee: parseFloat(royaltyFee),
         isListed: true,
         category: "Art",
         rarity: "Common",
         tokenStandard: "ERC-721" as const,
-        ipfsHash: ipfsHash,
+        ipfsHash,
         metadataURI: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
         txHash: tx.hash
       };
-      
-      // Save NFT to database
+  
       try {
-        console.log("Saving NFT to database:", newNft);
-        const dbResponse = await nftAPI.createNFT(newNft);
-        console.log("NFT saved to database:", dbResponse);
+        await nftAPI.createNFT(newNft);
       } catch (dbError) {
         console.error("Error saving NFT to database:", dbError);
-        // We don't throw here to allow the NFT creation to succeed even if DB save fails
-        toast.error("NFT minted successfully but failed to save details to database");
+        toast.error("NFT minted but failed to save details to database");
       }
-      
-      toast.success("NFT minted successfully!");
-      
-      // Update the NFTs list
+  
+      toast.success("NFT minted successfully!", { id: "mint-nft" });
+  
       getAllNFTs();
-      
-      setWeb3State(prev => ({ ...prev, isLoading: false }));
-      
+  
       return newNft;
     } catch (error: unknown) {
       console.error("Error minting NFT:", error);
-      setWeb3State(prev => ({ ...prev, isLoading: false, error: (error as Error).message }));
-      toast.error("Failed to mint NFT: " + (error as Error).message);
+      toast.error("Failed to mint NFT: " + (error as Error).message, { id: "mint-nft" });
       return null;
+    } finally {
+      setWeb3State(prev => ({ ...prev, isLoading: false }));
     }
   };
+  
   
   // Buy an NFT
   const buyNFT = async (tokenId: number) => {

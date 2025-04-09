@@ -755,9 +755,9 @@ export default function Profile() {
                   </Button>
                 </div>
 
-                <p className="mt-2 text-muted-foreground">
+                {/* <p className="mt-2 text-muted-foreground">
                   {creator?.bio || "No bio provided"}
-                </p>
+                </p> */}
               </div>
 
               <div className="flex gap-2 mt-4 md:mt-0">
