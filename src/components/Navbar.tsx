@@ -52,12 +52,12 @@ export function Navbar() {
           <div className={`hidden md:flex items-center relative transition-all duration-300 ${
             scrolled ? "w-48" : "w-52"
           }`}>
-            <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
+            {/* <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
             <input 
               type="text" 
               placeholder="Search NFTs..."
               className="w-full py-2 pl-10 pr-4 rounded-full bg-secondary/50 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
-            />
+            /> */}
           </div>
           <WalletButton />
           <button

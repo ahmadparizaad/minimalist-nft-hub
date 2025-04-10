@@ -39,7 +39,7 @@ export default function Profile() {
   const { web3State, getAllNFTs, getMyNFTs } = useWeb3();
   const { account } = web3State;
   const [nfts, setNfts] = useState<NFT[]>([]);
-  const [creator, setCreator] = useState<Creator | null>(null);
+  const [creator, setCreator] = useState<Creator | null>(null);zz
   const [ownedNFTs, setOwnedNFTs] = useState<NFT[]>([]);
   const [createdNFTs, setCreatedNFTs] = useState<NFT[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -705,7 +705,7 @@ export default function Profile() {
                   />
                 ) : (
                   <div
-                    className="w-32 h-32 rounded-full border-4 border-background"
+                    className="w-32 h-32 rounded-full border-4 border-background object-cover"
                     dangerouslySetInnerHTML={{
                       __html: generateJazzicon(profileAddress || "0x0000000000000000"),
                     }}
