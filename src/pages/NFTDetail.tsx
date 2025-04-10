@@ -246,6 +246,15 @@ useEffect(() => {
       <Navbar />
       <main className="flex-1 pt-20 px-4">
         <div className="container mx-auto max-w-6xl py-12">
+<<<<<<< HEAD
+          <div className="flex flex-col gap-8 lg:flex-row">
+            <div className="w-full lg:w-2/3">
+              <div className="relative rounded-xl overflow-hidden">
+                <img 
+                  src={nft.image || getFallbackImage(nft.creator)} 
+                  alt={nft.name} 
+                  className="object-cover w-full h-96" 
+=======
           <div className="flex flex-col lg:flex-row gap-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -259,22 +268,34 @@ useEffect(() => {
                   alt={nft.title}
                   className="w-full h-full object-cover"
                   
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
                 />
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <img src="/skale-logo.svg" alt="SKALE" className="h-7 w-7" />
-                  <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-sm border-none">
-                    {nft.tokenStandard}
-                  </Badge>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute top-4 right-4 bg-black/30 text-white backdrop-blur-sm border-none rounded-full"
-                  onClick={() => navigator.clipboard.writeText(window.location.href)}
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
               </div>
+<<<<<<< HEAD
+              <div className="mt-6">
+                <h2 className="text-3xl font-semibold">{nft.name}</h2>
+                <div className="mt-4 text-xl text-muted">{formatPrice(nft.price)} USDC</div>
+                <div className="mt-4">
+                  {nft.owner && (
+                    <div className="flex items-center gap-4">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Avatar>
+                              <AvatarImage src={getFallbackImage(nft.owner)} />
+                              <AvatarFallback>?</AvatarFallback>
+                            </Avatar>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div>
+                              <h3>{nft.owner}</h3>
+                              <p>{ownerProfile?.username}</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <p className="text-sm">Owned by {nft.owner}</p>
+=======
               
               <div className="mt-6 grid grid-cols-3 gap-4">
                 <div className="p-4 rounded-xl bg-muted/50">
@@ -399,38 +420,40 @@ useEffect(() => {
                           )}                        
                           </Button>
                       )}
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
                     </div>
-                    {!isConnected && (
-                      <Button onClick={connectWallet} className="w-full">
-                        Connect Wallet to Buy
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="mb-8">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-center">
-                      <p className="text-xl font-medium text-red-500">Not Listed</p>
-                      {isOwner && (
-                        <Button 
-                          variant="outline"
-                          className="border-blue-500 text-blue-500"
-                          onClick={() => navigate(`/update-nft/${nft.tokenId}`)}
-                        >
-                          List for Sale
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </div>
+              </div>
 
-              <Tabs defaultValue="history">
-                <TabsList className="w-full">
-                  <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
-                  <TabsTrigger value="details" className="flex-1">Details</TabsTrigger>
+              <Tabs defaultValue="details" className="mt-12">
+                <TabsList>
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="history">History</TabsTrigger>
                 </TabsList>
+<<<<<<< HEAD
+                <TabsContent value="details">
+                  <div className="mt-4">
+                    <p>{nft.description}</p>
+                  </div>
+                </TabsContent>
+                <TabsContent value="history">
+                  <div className="mt-4">
+                    {isLoadingHistory ? (
+                      <div className="animate-pulse">Loading transaction history...</div>
+                    ) : (
+                      <ul>
+                        {formattedTransactions.map(tx => (
+                          <li key={tx.id}>
+                            <div className="flex justify-between">
+                              <div>{tx.type}</div>
+                              <div>{tx.timeAgo}</div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+=======
 
                 <TabsContent value="history" className="mt-4">
   <div className="space-y-4">
@@ -477,6 +500,7 @@ useEffect(() => {
                   <div className="flex justify-between p-3">
                     <p>Contract Address</p>
                     <p className="font-mono">{formatAddress(contractAddress)}</p>
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
                   </div>
 
                   {/* Token ID */}
@@ -522,10 +546,22 @@ useEffect(() => {
                 </div>
               </TabsContent>
               </Tabs>
-            </motion.div>
+
+              {isPurchasing ? (
+                <Button disabled className="mt-8" fullWidth>
+                  Processing Purchase...
+                </Button>
+              ) : (
+                <Button onClick={handlePurchase} className="mt-8" fullWidth>
+                  Buy Now
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </main>
+<<<<<<< HEAD
+=======
 
       <Dialog open={showInsufficientFundsDialog} onOpenChange={setShowInsufficientFundsDialog}>
         <DialogContent>
@@ -562,6 +598,7 @@ useEffect(() => {
         </DialogContent>
       </Dialog>
       
+>>>>>>> 8f083ee57f2465468dd83e2a8bc9af40e5ec49cb
       <Footer />
     </div>
   );

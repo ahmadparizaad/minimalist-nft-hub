@@ -15,8 +15,11 @@ import { checkSufficientSFuel } from "@/utils/web3";
 import { motion } from "framer-motion";
 import { UploadCloud, Image, AlertTriangle } from "lucide-react";
 import { NFTAttribute } from "@/types";
+import { useNavigate } from 'react-router-dom';
+
 
 export default function Mint() {
+  const navigate = useNavigate();
   const { web3State, connectWallet, requestSFuel, mintNFT } = useWeb3();
   const { isConnected, account, sFuelBalance } = web3State;
   
@@ -160,6 +163,7 @@ export default function Mint() {
         setPrice("0.1");
         setImageFile(null);
         setImagePreview(null);
+        navigate("/profile?tab=created");
       }
     } catch (error) {
       console.error("Error minting NFT:", error);
@@ -169,6 +173,7 @@ export default function Mint() {
       setMintingStep(0);
     }
   };
+//navigate('/profile?tab=created')
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -377,51 +382,7 @@ export default function Mint() {
                 </CardContent>
               </Card>
               
-              {/* <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle>Attributes</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {attributes.map((attr, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <Input 
-                          placeholder="Trait name" 
-                          value={attr.trait_type?.toString() || ''} 
-                          onChange={(e) => handleAttributeChange(index, "trait_type", e.target.value)} 
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input 
-                          placeholder="Value" 
-                          value={attr.value?.toString() || ''}
-                          onChange={(e) => {
-                            const value = isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value);
-                            handleAttributeChange(index, "value", value);
-                          }} 
-                        />
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        onClick={() => handleRemoveAttribute(index)}
-                        className="flex-shrink-0"
-                      >
-                        <span className="sr-only">Remove</span>
-                        <span aria-hidden="true">&times;</span>
-                      </Button>
-                    </div>
-                  ))}
-                  
-                  <Button
-                    variant="outline"
-                    onClick={handleAddAttribute}
-                    className="w-full"
-                  >
-                    Add Attribute
-                  </Button>
-                </CardContent>
-              </Card> */}
+             
             </motion.div>
           </div>
           
