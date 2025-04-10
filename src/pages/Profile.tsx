@@ -39,7 +39,7 @@ export default function Profile() {
   const { web3State, getAllNFTs, getMyNFTs } = useWeb3();
   const { account } = web3State;
   const [nfts, setNfts] = useState<NFT[]>([]);
-  const [creator, setCreator] = useState<Creator | null>(null);zz
+  const [creator, setCreator] = useState<Creator | null>(null);
   const [ownedNFTs, setOwnedNFTs] = useState<NFT[]>([]);
   const [createdNFTs, setCreatedNFTs] = useState<NFT[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
