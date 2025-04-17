@@ -267,7 +267,7 @@ export const userAPI = {
       console.error("Error getting follow status:", error);
       return { isFollowing: false, success: false };
     }
-  }
+  },
 };
 
 // Collection API

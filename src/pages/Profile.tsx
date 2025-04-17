@@ -79,6 +79,30 @@ export default function Profile() {
       setEditBioValue(creator.bio || "");
     }
   }, [creator]);
+
+  useEffect(() => {
+    const fetchFollowersList = async () => {
+      if (!profileAddress) return;
+
+      setIsLoadingFollowers(true);
+      try {
+        const response = await userAPI.getUserByAddress(profileAddress);
+        if (response && response.data) {
+          setFollowersList(response.data.followers || []);
+          setFollowersCount(response.data.total || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching followers list:", error);
+        toast.error("Failed to load followers list");
+      } finally {
+        setIsLoadingFollowers(false);
+      }
+    };
+
+    if (profileAddress) {
+      fetchFollowersList();
+    }
+  }, [profileAddress]);
   
   // Check follow status
   useEffect(() => {
@@ -407,59 +431,43 @@ export default function Profile() {
   };
 
   // Fetch followers and following lists
-  const fetchFollowersList = async () => {
+  const fetchFollowersList = async (page = 1, limit = 10) => {
     if (!profileAddress) return;
-
+  
     setIsLoadingFollowers(true);
     try {
       const response = await userAPI.getUserByAddress(profileAddress);
-
+  
       if (response && response.data) {
-        const followersArray = Array.isArray(response.data.followers) ? response.data.followers : [];
-        if (followersArray.length > 0) {
-          // Batch API calls to reduce time
-          const batchSize = 10; // Adjust batch size as needed
-          const batches = [];
-          for (let i = 0; i < followersArray.length; i += batchSize) {
-            const batch = followersArray.slice(i, i + batchSize);
-            batches.push(
-              Promise.all(
-                batch.map(async (followerAddress) => {
-                  try {
-                    const followerResponse = await userAPI.getUserByAddress(followerAddress);
-                    const isFollowingThisUser =
-                      account &&
-                      (await userAPI.getFollowStatus(account, followerAddress))?.isFollowing;
-
-                    return {
-                      address: followerAddress,
-                      username: followerResponse?.data?.username || followerResponse?.data?.name,
-                      profileImage: followerResponse?.data?.profileImage,
-                      isFollowing: isFollowingThisUser || false,
-                    };
-                  } catch (error) {
-                    console.error(`Error fetching follower ${followerAddress}:`, error);
-                    return { address: followerAddress, isFollowing: false };
-                  }
-                })
-              )
-            );
-          }
-
-          const fetchedFollowers = (await Promise.all(batches)).flat();
-          setFollowersList(fetchedFollowers);
-        } else {
-          setFollowersList([]);
-        }
-      } else {
-        setFollowersList([]);
+        const followersArray = response.data.followers || [];
+        const totalFollowers = response.data.total || 0;
+  
+        // Update followers list and total count
+        setFollowersList((prev) => [...prev, ...followersArray]);
+        setFollowersCount(totalFollowers);
       }
     } catch (error) {
       console.error("Error fetching followers:", error);
       toast.error("Failed to load followers");
-      setFollowersList([]);
     } finally {
       setIsLoadingFollowers(false);
+    }
+  };
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreFollowers, setHasMoreFollowers] = useState(true);
+  
+  const loadMoreFollowers = async () => {
+    if (isLoadingFollowers || !hasMoreFollowers) return;
+  
+    const nextPage = currentPage + 1;
+    await fetchFollowersList(nextPage);
+  
+    // Check if there are more followers to load
+    if (followersList.length >= followersCount) {
+      setHasMoreFollowers(false);
+    } else {
+      setCurrentPage(nextPage);
     }
   };
   
@@ -1258,75 +1266,50 @@ export default function Profile() {
         <DialogContent className="max-w-md md:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              <span>Followers {followersList.length > 0 && <span className="ml-2 text-muted-foreground">({followersList.length})</span>}</span>
+              <span>Followers {followersList.length > 0 && <span className="ml-2 text-muted-foreground">({followersCount})</span>}</span>
             </DialogTitle>
             <DialogDescription>
               People who follow this profile
             </DialogDescription>
           </DialogHeader>
 
-          {isLoadingFollowers ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : followersList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Users className="h-12 w-12 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No followers yet</p>
-              {account === profileAddress && (
-                <p className="text-sm text-muted-foreground mt-1">Share your profile to get more followers</p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-              {followersList.map((follower) => (
-                <div key={follower.address} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-md transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-muted">
-                      <AvatarImage 
-                        src={follower.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${follower.address}`} 
-                        alt={follower.username || formatAddress(follower.address)} 
-                      />
-                      <AvatarFallback>{follower.address.substring(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      {/* <p className="font-medium">{follower.username || formatAddress(follower.address)}</p> */}
-                      <a 
-                        href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${follower.address}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="font-medium text-blue-500 hover:underline"
-                      >
-                        {follower.username || formatAddress(follower.address)}
-                      </a>
-                      <p className="text-xs text-muted-foreground">{formatAddress(follower.address)}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {account && follower.address !== account && (
-                      <Button 
-                        variant={follower.isFollowing ? "outline" : "default"}
-                        size="sm" 
-                        onClick={() => handleFollowFromList(follower.address, follower.isFollowing, true)}
-                        className={follower.isFollowing ? "border-primary text-primary hover:bg-primary/10" : ""}
-                      >
-                        {follower.isFollowing ? "Following" : "Follow"}
-                      </Button>
-                    )}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      asChild
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2" onScroll={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.scrollTop + target.clientHeight >= target.scrollHeight - 50) {
+              loadMoreFollowers();
+            }
+          }}>
+            {followersList.map((follower) => (
+              <div key={follower?.address} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-md transition-colors">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border border-muted">
+                    <AvatarImage 
+                      src={follower?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${follower?.address || 'unknown'}`} 
+                      alt={follower?.username || (follower?.address ? formatAddress(follower.address) : 'Unknown')} 
+                    />
+                    <AvatarFallback>{follower?.address ? follower.address.substring(0, 2) : 'UN'}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    {/* <p className="font-medium">{follower.username || formatAddress(follower.address)}</p> */}
+                    <a 
+                      href={follower?.address ? `https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${follower.address}` : '#'} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-500 hover:underline"
                     >
-                      <Link to={`/profile/${follower.address}`} onClick={() => setFollowersOpen(false)}>
-                        View
-                      </Link>
-                    </Button>
+                      {follower?.username || (follower?.address ? formatAddress(follower.address) : 'Unknown')}
+                    </a>
+                    <p className="text-xs text-muted-foreground">{follower?.address ? formatAddress(follower.address) : 'Address unavailable'}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+            {isLoadingFollowers && (
+              <div className="flex justify-center items-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       
@@ -1364,7 +1347,7 @@ export default function Profile() {
                         src={following.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${following.address}`} 
                         alt={following.username || formatAddress(following.address)} 
                       />
-                      <AvatarFallback>{following.address.substring(0, 2)}</AvatarFallback>
+                      <AvatarFallback>{following?.address.substring(0, 2)}</AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{following.username || formatAddress(following.address)}</p>
