@@ -268,6 +268,32 @@ export const userAPI = {
       return { isFollowing: false, success: false };
     }
   },
+
+  getFollowers: async (address: string, page = 1, limit = 20) => {
+    try {
+      console.log(`Fetching followers for ${address}, page ${page}, limit ${limit}`);
+      const response = await api.get(`/users/${address}/followers`, {
+        params: { page, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching followers:", error);
+      return { success: false, data: { followers: [], total: 0 } };
+    }
+  },
+
+  getFollowing: async (address: string, page = 1, limit = 20) => {
+    try {
+      console.log(`Fetching following for ${address}, page ${page}, limit ${limit}`);
+      const response = await api.get(`/users/${address}/following`, {
+        params: { page, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching following:", error);
+      return { success: false, data: { following: [], total: 0 } };
+    }
+  },
 };
 
 // Collection API
