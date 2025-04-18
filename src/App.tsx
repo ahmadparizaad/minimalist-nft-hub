@@ -35,11 +35,11 @@ const App = () => (
             <Route path="/mint" element={<Mint />} />
             <Route path="/update-nft/:tokenId" element={<UpdateNFT />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/:address" element={<Profile />} />
+            <Route path="/profile/:address?" element={<Profile />} />
             <Route path="/trending" element={<TrendingNFTs />} />
             <Route path="/help-center" element={<HelpCenter />} />
             <Route path="/partners" element={<Partners />} />
-            <Route path="/status" element={<PlatformStatus />} />
+            <Route path="/platform-status" element={<PlatformStatus />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />

@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="bg-background pt-16 pb-8 border-t border-border/40">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-1 mb-2 text-xl font-display font-bold">
           <img src="/processed_logo.png" alt="NapFT" className="h-6 w-auto my-0" />
@@ -37,15 +37,15 @@ export function Footer() {
             </ul>
           </div>
           
-          <div>
+          {/* <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Resources</h4>
             <ul className="space-y-2">
               <li><Link to="/help-center" className="text-foreground/80 hover:text-primary transition-colors">Help Center</Link></li>
-              <li><Link to="/status" className="text-foreground/80 hover:text-primary transition-colors">Platform Status</Link></li>
+              <li><Link to="/platform-status" className="text-foreground/80 hover:text-primary transition-colors">Platform Status</Link></li>
               <li><Link to="/partners" className="text-foreground/80 hover:text-primary transition-colors">Partners</Link></li>
               <li><Link to="/blog" className="text-foreground/80 hover:text-primary transition-colors">Blog</Link></li>
             </ul>
-          </div>
+          </div> */}
         </div>
         
         <div className="flex flex-col md:flex-row justify-between items-center border-t border-border/30 pt-8">
