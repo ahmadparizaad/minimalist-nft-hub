@@ -24,6 +24,23 @@ This project uses different environment configurations for development and produ
 - `.env.production`: Contains production environment variables
 - `.env`: Default fallback environment variables
 
+### Environment Security
+
+For security, all environment files (`.env`, `.env.development`, `.env.production`) containing sensitive information are not tracked in Git. The repository includes an `.env.example` file that shows the structure of required environment variables without actual values.
+
+To set up your local environment:
+
+1. Copy the example file to create your own `.env` file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Fill in your actual API keys and secrets in the `.env` file.
+
+3. Never commit your actual environment files to Git. They are already listed in `.gitignore`.
+
+4. If you add new environment variables to your project, update the `.env.example` file (without real values) so other contributors know what variables are needed.
+
 ## Development
 
 To start the development server:
