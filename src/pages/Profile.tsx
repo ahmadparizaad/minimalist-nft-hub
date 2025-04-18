@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import Jazzicon from "@metamask/jazzicon";
+
 
 export default function Profile() {
   const { address } = useParams<{ address: string }>();
@@ -79,30 +79,32 @@ export default function Profile() {
       setEditBioValue(creator.bio || "");
     }
   }, [creator]);
+  
+  const handleDeleteProfileImage = async () => {
+    try {
+      setProfileImageURL(""); // clears from UI
+      await userAPI.updateUser(profileAddress, { profileImage: "" });
 
-  useEffect(() => {
-    const fetchFollowersList = async () => {
-      if (!profileAddress) return;
-
-      setIsLoadingFollowers(true);
-      try {
-        const response = await userAPI.getUserByAddress(profileAddress);
-        if (response && response.data) {
-          setFollowersList(response.data.followers || []);
-          setFollowersCount(response.data.total || 0);
-        }
-      } catch (error) {
-        console.error("Error fetching followers list:", error);
-        toast.error("Failed to load followers list");
-      } finally {
-        setIsLoadingFollowers(false);
-      }
-    };
-
-    if (profileAddress) {
-      fetchFollowersList();
+      toast.success("Profile image deleted");
+      setEditProfileImageOpen(false); // close dialog
+      setCreator((prev) => prev ? { ...prev, profileImageURL: "" } : null);
+    } catch (error) {
+      toast.error("Failed to delete profile image");
     }
-  }, [profileAddress]);
+  };
+  
+  
+  
+  // const handleDeleteBannerImage = async () => {
+  //   try {
+  //     setBannerURL("");
+  //     // Optionally make an API call to delete from DB
+  //     await userAPI.updateUser(profileAddress, { bannerImage: "" });
+  //     toast.success("Banner image removed");
+  //   } catch (error) {
+  //     toast.error("Failed to delete banner image");
+  //   }
+  // };
   
   // Check follow status
   useEffect(() => {
@@ -431,24 +433,57 @@ export default function Profile() {
   };
 
   // Fetch followers and following lists
-  const fetchFollowersList = async (page = 1, limit = 10) => {
+  const fetchFollowersList = async () => {
     if (!profileAddress) return;
-  
+
     setIsLoadingFollowers(true);
     try {
       const response = await userAPI.getUserByAddress(profileAddress);
-  
+
       if (response && response.data) {
-        const followersArray = response.data.followers || [];
-        const totalFollowers = response.data.total || 0;
-  
-        // Update followers list and total count
-        setFollowersList((prev) => [...prev, ...followersArray]);
-        setFollowersCount(totalFollowers);
+        const followersArray = Array.isArray(response.data.followers) ? response.data.followers : [];
+        if (followersArray.length > 0) {
+          // Batch API calls to reduce time
+          const batchSize = 10; // Adjust batch size as needed
+          const batches = [];
+          for (let i = 0; i < followersArray.length; i += batchSize) {
+            const batch = followersArray.slice(i, i + batchSize);
+            batches.push(
+              Promise.all(
+                batch.map(async (followerAddress) => {
+                  try {
+                    const followerResponse = await userAPI.getUserByAddress(followerAddress);
+                    const isFollowingThisUser =
+                      account &&
+                      (await userAPI.getFollowStatus(account, followerAddress))?.isFollowing;
+
+                    return {
+                      address: followerAddress,
+                      username: followerResponse?.data?.username || followerResponse?.data?.name,
+                      profileImage: followerResponse?.data?.profileImage,
+                      isFollowing: isFollowingThisUser || false,
+                    };
+                  } catch (error) {
+                    console.error(`Error fetching follower ${followerAddress}:`, error);
+                    return { address: followerAddress, isFollowing: false };
+                  }
+                })
+              )
+            );
+          }
+
+          const fetchedFollowers = (await Promise.all(batches)).flat();
+          setFollowersList(fetchedFollowers);
+        } else {
+          setFollowersList([]);
+        }
+      } else {
+        setFollowersList([]);
       }
     } catch (error) {
       console.error("Error fetching followers:", error);
       toast.error("Failed to load followers");
+      setFollowersList([]);
     } finally {
       setIsLoadingFollowers(false);
     }
@@ -597,9 +632,9 @@ export default function Profile() {
   };
 
   const generateJazzicon = (address: string) => {
-    const seed = parseInt(address.slice(2, 10), 16); // Generate a seed from the address
-    const jazzicon = Jazzicon(32, seed); // Create a Jazzicon with size 32
-    return jazzicon.outerHTML; // Return the HTML string
+    if (!address) return null;
+    const seed = jsNumberForAddress(address); // Or your existing parseInt method
+    return <Jazzicon diameter={32} seed={seed} />;
   };
 
   const location = useLocation();
@@ -704,37 +739,38 @@ export default function Profile() {
             className="relative -mt-16 mb-8"
           >
             <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
-              <div className="relative">
-                {creator?.profileImage ? (
-                  <img loading="lazy"
-                    src={creator.profileImage}
-                    alt="Profile"
-                    className="w-32 h-32 rounded-full border-4 border-background object-cover"
-                  />
-                ) : (
-                  <div
-                    className="w-32 h-32 rounded-full border-4 border-background object-cover"
-                    dangerouslySetInnerHTML={{
-                      __html: generateJazzicon(profileAddress || "0x0000000000000000"),
-                    }}
-                  />
-                )}
-                {creator?.verified && (
-                  <div className="absolute bottom-1 right-1 bg-primary text-white rounded-full p-1">
-                    <CheckCircle2 className="h-5 w-5" />
-                  </div>
-                )}
-                {isOwner && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="absolute bottom-0 right-0 bg-white/80 backdrop-blur-sm rounded-full p-1 h-8 w-8"
-                    onClick={() => setEditProfileImageOpen(true)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-background">
+  {creator?.profileImage ? (
+    <img
+      src={creator.profileImage}
+      alt="Profile"
+      loading="lazy"
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center">
+      <Jazzicon diameter={128} seed={jsNumberForAddress(profileAddress || "0x0000000000000000")} />
+    </div>
+  )}
+
+  {creator?.verified && (
+    <div className="absolute bottom-1 right-1 bg-primary text-white rounded-full p-1">
+      <CheckCircle2 className="h-5 w-5" />
+    </div>
+  )}
+
+  {isOwner && (
+    <Button
+      variant="outline"
+      size="sm"
+      className="absolute bottom-0 right-0 bg-white/80 backdrop-blur-sm rounded-full p-0 h-12 w-12"
+      onClick={() => setEditProfileImageOpen(true)}
+    >
+      <Edit className="h-2 w-2" />
+    </Button>
+  )}
+</div>
+
 
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
@@ -1071,14 +1107,25 @@ export default function Profile() {
                   </TabsContent>
                 </Tabs>
                 
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setEditProfileImageOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdateProfileImage} disabled={!profileImageURL}>
-                    Update Profile Image
-                  </Button>
-                </DialogFooter>
+                <DialogFooter className="flex justify-between">
+  <Button
+    variant="destructive"
+    onClick={handleDeleteProfileImage}
+    disabled={!profileImageURL}
+  >
+    Delete Image
+  </Button>
+
+  <div className="flex gap-2">
+    <Button variant="outline" onClick={() => setEditProfileImageOpen(false)}>
+      Cancel
+    </Button>
+    <Button onClick={handleUpdateProfileImage} disabled={!profileImageURL}>
+      Update Profile Image
+    </Button>
+  </div>
+</DialogFooter>
+
               </DialogContent>
             </Dialog>
           </motion.div>
@@ -1261,57 +1308,117 @@ export default function Profile() {
         </div>
       </main>
 
-      {/* Followers Dialog */}
-      <Dialog open={followersOpen} onOpenChange={setFollowersOpen}>
-        <DialogContent className="max-w-md md:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Followers {followersList.length > 0 && <span className="ml-2 text-muted-foreground">({followersCount})</span>}</span>
-            </DialogTitle>
-            <DialogDescription>
-              People who follow this profile
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2" onScroll={(e) => {
-            const target = e.target as HTMLElement;
-            if (target.scrollTop + target.clientHeight >= target.scrollHeight - 50) {
-              loadMoreFollowers();
-            }
-          }}>
-            {followersList.map((follower) => (
-              <div key={follower?.address} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-md transition-colors">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 border border-muted">
-                    <AvatarImage 
-                      src={follower?.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${follower?.address || 'unknown'}`} 
-                      alt={follower?.username || (follower?.address ? formatAddress(follower.address) : 'Unknown')} 
+{/* Followers Dialog */}
+<Dialog open={followersOpen} onOpenChange={setFollowersOpen}>
+  <DialogContent className="max-w-md md:max-w-lg">
+    <DialogHeader>
+      <DialogTitle className="flex items-center justify-between">
+        <span>
+          Followers{" "}
+          {followersList.length > 0 && (
+            <span className="ml-2 text-muted-foreground">
+              ({followersList.length})
+            </span>
+          )}
+        </span>
+      </DialogTitle>
+      <DialogDescription>People who follow this profile</DialogDescription>
+    </DialogHeader>
+
+    {isLoadingFollowers ? (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    ) : followersList.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <Users className="h-12 w-12 text-muted-foreground mb-2" />
+        <p className="text-muted-foreground">No followers yet</p>
+        {account === profileAddress && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Share your profile to get more followers
+          </p>
+        )}
+      </div>
+    ) : (
+      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+        {followersList.map((follower) => (
+          <div
+            key={follower.address}
+            className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-md transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 border border-muted">
+                {follower.profileImage ? (
+                  <AvatarImage
+                    src={follower.profileImage}
+                    alt={follower.username || formatAddress(follower.address)}
+                  />
+                ) : (
+                  <div className="rounded-full overflow-hidden">
+                    <Jazzicon
+                      diameter={40}
+                      seed={jsNumberForAddress(follower.address)}
                     />
-                    <AvatarFallback>{follower?.address ? follower.address.substring(0, 2) : 'UN'}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    {/* <p className="font-medium">{follower.username || formatAddress(follower.address)}</p> */}
-                    <a 
-                      href={follower?.address ? `https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${follower.address}` : '#'} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="font-medium text-blue-500 hover:underline"
-                    >
-                      {follower?.username || (follower?.address ? formatAddress(follower.address) : 'Unknown')}
-                    </a>
-                    <p className="text-xs text-muted-foreground">{follower?.address ? formatAddress(follower.address) : 'Address unavailable'}</p>
+                    
                   </div>
-                </div>
+                )}
+                <AvatarFallback>
+                  {follower.address.substring(2, 4).toUpperCase()}
+                  
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <a
+                  href={`https://giant-half-dual-testnet.explorer.testnet.skalenodes.com/address/${follower.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-blue-500 hover:underline"
+                >
+                  {follower.username || formatAddress(follower.address)}
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  {formatAddress(follower.address)}
+                </p>
               </div>
-            ))}
-            {isLoadingFollowers && (
-              <div className="flex justify-center items-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              </div>
-            )}
+            </div>
+            <div className="flex gap-2">
+              {account && follower.address !== account && (
+                <Button
+                  variant={follower.isFollowing ? "outline" : "default"}
+                  size="sm"
+                  onClick={() =>
+                    handleFollowFromList(
+                      follower.address,
+                      follower.isFollowing,
+                      true
+                    )
+                  }
+                  className={
+                    follower.isFollowing
+                      ? "border-primary text-primary hover:bg-primary/10"
+                      : ""
+                  }
+                >
+                  {follower.isFollowing ? "Following" : "Follow"}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  to={`/profile/${follower.address}`}
+                  onClick={() => setFollowersOpen(false)}
+                >
+                  View
+                </Link>
+              </Button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        ))}
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
+
       
       {/* Following Dialog */}
       <Dialog open={followingOpen} onOpenChange={setFollowingOpen}>
@@ -1347,7 +1454,7 @@ export default function Profile() {
                         src={following.profileImage || `https://source.unsplash.com/random/300x300?profile&sig=${following.address}`} 
                         alt={following.username || formatAddress(following.address)} 
                       />
-                      <AvatarFallback>{following?.address.substring(0, 2)}</AvatarFallback>
+                      <AvatarFallback>{following.address.substring(0, 2)}</AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{following.username || formatAddress(following.address)}</p>
