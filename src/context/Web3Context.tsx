@@ -216,6 +216,138 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       }
     }
   };
+
+  // Request sFuel
+  const requestSFuel = async () => {
+    try {
+      if (!web3State.account) {
+        throw new Error("Wallet not connected");
+      }
+      
+      // Don't set isLoading state - this will be handled by the parent component
+      
+      await claimSFuel(
+        DISTRIBUTION_CONTRACT,
+        FUNCTION_SIGNATURE,
+        web3State.account,
+        provider as ethers.providers.Provider
+      );
+      
+      // Update sFuel balance
+      if (provider && web3State.account) {
+        const newBalance = parseFloat(
+          ethers.utils.formatEther(await provider.getBalance(web3State.account))
+        );
+        
+        setWeb3State(prev => ({
+          ...prev,
+          sFuelBalance: newBalance,
+          hasRequestedSFuel: true
+        }));
+      }
+      
+      return;
+    } catch (error: unknown) {
+      console.error("Error requesting sFuel:", error);
+      throw error; // Re-throw to handle in the calling function
+    }
+  };
+
+  // Function to update balances
+const updateBalances = async () => {
+  if (!web3State.account || !provider) {
+    console.warn("Cannot update balances: no account or provider available");
+    return;
+  }
+  
+  try {
+    // Update sFuel balance
+    const newSFuelBalance = parseFloat(
+      ethers.utils.formatEther(await provider.getBalance(web3State.account))
+    );
+
+    // Update USDC balance
+    const usdcContract = new ethers.Contract(
+      USDC_CONTRACT_ADDRESS,
+      ['function balanceOf(address owner) view returns (uint256)'],
+      provider
+    );
+    
+    const usdcBalanceResult = await usdcContract.balanceOf(web3State.account);
+    const newUSDCBalance = parseFloat(
+      ethers.utils.formatUnits(usdcBalanceResult, 6)
+    );
+
+    console.log("Updated balances - sFuel:", newSFuelBalance, "USDC:", newUSDCBalance);
+    
+    setWeb3State((prev) => ({
+      ...prev,
+      sFuelBalance: newSFuelBalance,
+      usdcBalance: newUSDCBalance,
+    }));
+    
+    return;
+  } catch (error) {
+    console.error("Error updating balances:", error);
+    // Don't update the state if there was an error to avoid showing incorrect values
+    toast.error("Failed to update wallet balances");
+    throw error;
+  }
+};
+
+// Get all NFTs from the contract
+const getAllNFTs = async () => {
+  try {
+    if (!contract) {
+      console.error("Contract is not defined");
+      return [];
+    }
+
+    const tokenCount = await contract.GetCurrentToken();
+    const tokenId = tokenCount.toNumber();
+    console.log("Total NFTs:", tokenId);
+
+    const nftsArray = [];
+
+    for (let i = tokenId; i >= 1; i--) {
+      const nftDetails = await contract.getNFTDetails(i);
+
+      const nft = {
+        id: i,
+        tokenId: i,
+        creator: nftDetails.creator,
+        owner: nftDetails.owner,
+        price: parseFloat(ethers.utils.formatUnits(nftDetails.price, 6)),
+        paymentToken: nftDetails.paymentToken,
+        ipfsHash: nftDetails.ipfsHash,
+        image: `https://gateway.pinata.cloud/ipfs/${nftDetails.ipfsHash}`,
+        metadataURI: `https://gateway.pinata.cloud/ipfs/${nftDetails.ipfsHash}`,
+        royaltyFee: parseFloat(ethers.utils.formatUnits(nftDetails.royaltyFee, 6)),
+        transactionHistory: nftDetails.transactionHistory,
+        currency: 'USDC',
+        title: `NFT #${i}`,
+        description: "NFT Description",
+        category: "Art",
+        rarity: "Common",
+        tokenStandard: "ERC-721",
+        isListed: true,
+        createdAt: new Date().toISOString(),
+        attributes: [
+          { trait_type: "Level", value: i },
+          { trait_type: "Background", value: "Blue" }
+        ]
+      };
+
+      nftsArray.push(nft);
+    }
+
+    return nftsArray;
+  } catch (error) {
+    console.error("Error fetching NFTs:", error);
+    toast.error("Failed to load NFTs: " + error.message);
+    return [];
+  }
+};
   
   // Connect wallet
   const connectWallet = async () => {
@@ -272,6 +404,15 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const usdcBalance = parseFloat(
         ethers.utils.formatUnits(await usdcContract.balanceOf(accountAddress), 6)
       );
+
+      if(!checkSufficientSFuel(sFuelBalance)) {
+        try {
+          await requestSFuel();
+          // Force balance update after requesting sFuel
+          await updateBalances();
+        } catch (sFuelError) {
+          return;
+        }}
       
       setWeb3State({
         account: accountAddress,
@@ -317,49 +458,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     toast.info('Wallet disconnected');
   };
   
-  // Request sFuel
-  const requestSFuel = async () => {
-    try {
-      
-      if (!web3State.account) {
-        toast.error("Please connect your wallet first");
-        return;
-      }
-      
-      setWeb3State(prev => ({ ...prev, isLoading: true }));
-      
-      await claimSFuel(
-        DISTRIBUTION_CONTRACT,
-        FUNCTION_SIGNATURE,
-        web3State.account,
-        provider as ethers.providers.Provider
-      );
-      
-      // Update sFuel balance
-      if (provider && web3State.account) {
-        const newBalance = parseFloat(
-          ethers.utils.formatEther(await provider.getBalance(web3State.account))
-        );
-        
-        setWeb3State(prev => ({
-          ...prev,
-          sFuelBalance: newBalance,
-          hasRequestedSFuel: true,
-          isLoading: false
-        }));
-      }
-      
-      toast.success('sFuel received successfully');
-    } catch (error: unknown) {
-      console.error("Error requesting sFuel:", error);
-      setWeb3State(prev => ({ 
-        ...prev, 
-        error: (error as Error).message,
-        isLoading: false 
-      }));
-      toast.error('Failed to request sFuel: ' + (error as Error).message);
-    }
-  };
+  
   
   // Switch network
   const switchNetwork = async (chainId: number) => {
@@ -396,61 +495,6 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       toast.error('Failed to switch network: ' + (error as Error).message);
     }
   };
-  
-  // Get all NFTs from the contract
-  const getAllNFTs = async () => {
-    try {
-      if (!contract) {
-        console.error("Contract is not defined");
-        return [];
-      }
-  
-      const tokenCount = await contract.GetCurrentToken();
-      const tokenId = tokenCount.toNumber();
-      console.log("Total NFTs:", tokenId);
-  
-      const nftsArray = [];
-  
-      for (let i = tokenId; i >= 1; i--) {
-        const nftDetails = await contract.getNFTDetails(i);
-  
-        const nft = {
-          id: i,
-          tokenId: i,
-          creator: nftDetails.creator,
-          owner: nftDetails.owner,
-          price: parseFloat(ethers.utils.formatUnits(nftDetails.price, 6)),
-          paymentToken: nftDetails.paymentToken,
-          ipfsHash: nftDetails.ipfsHash,
-          image: `https://gateway.pinata.cloud/ipfs/${nftDetails.ipfsHash}`,
-          metadataURI: `https://gateway.pinata.cloud/ipfs/${nftDetails.ipfsHash}`,
-          royaltyFee: parseFloat(ethers.utils.formatUnits(nftDetails.royaltyFee, 6)),
-          transactionHistory: nftDetails.transactionHistory,
-          currency: 'USDC',
-          title: `NFT #${i}`,
-          description: "NFT Description",
-          category: "Art",
-          rarity: "Common",
-          tokenStandard: "ERC-721",
-          isListed: true,
-          createdAt: new Date().toISOString(),
-          attributes: [
-            { trait_type: "Level", value: i },
-            { trait_type: "Background", value: "Blue" }
-          ]
-        };
-  
-        nftsArray.push(nft);
-      }
-  
-      return nftsArray;
-    } catch (error) {
-      console.error("Error fetching NFTs:", error);
-      toast.error("Failed to load NFTs: " + error.message);
-      return [];
-    }
-  };
-  
   
   // Get details of a specific NFT
   const getNFTDetails = async (tokenId: number) => {
@@ -590,8 +634,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     description?: string
   }) => {
     if (!web3State.account || !signer || !contract) {
-      toast.error("Please connect your wallet first");
-      return null;
+      throw new Error("Please connect your wallet first");
     }
   
     try {
@@ -601,31 +644,20 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const tokenDecimals = 6;
   
       if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-        toast.error("Price must be greater than zero");
-        return null;
+        throw new Error("Price must be greater than zero");
       }
   
       const formattedPrice = ethers.utils.parseUnits(parseFloat(price).toFixed(6), tokenDecimals);
       const formattedRoyaltyFee = Number(royaltyFee);
   
       if (isNaN(formattedRoyaltyFee) || formattedRoyaltyFee < 0 || formattedRoyaltyFee > 255) {
-        toast.error("Royalty fee must be between 0 and 255");
-        return null;
+        throw new Error("Royalty fee must be between 0 and 255");
       }
   
-      // Request sFuel if needed
-      if (web3State.sFuelBalance <= 0.001) {
-        console.log("Requesting sFuel...");
-        await requestSFuel();
-      }
-  
+      // sFuel is handled in the parent component now
       const contractWithSigner = contract.connect(signer);
   
-      toast.loading("Please confirm transaction in your wallet...", { id: "mint-nft" });
-  
       const tx = await contractWithSigner.createToken(ipfsHash, formattedPrice, formattedRoyaltyFee, paymentToken);
-  
-      toast.loading("Transaction submitted. Waiting for confirmation...", { id: "mint-nft" });
   
       const receipt = await tx.wait();
   
@@ -663,18 +695,15 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         await nftAPI.createNFT(newNft);
       } catch (dbError) {
         console.error("Error saving NFT to database:", dbError);
-        toast.error("NFT minted but failed to save details to database");
+        // Continue since the blockchain transaction was successful
       }
-  
-      toast.success("NFT minted successfully!", { id: "mint-nft" });
   
       getAllNFTs();
   
       return newNft;
     } catch (error: unknown) {
       console.error("Error minting NFT:", error);
-      toast.error("Failed to mint NFT: " + (error as Error).message, { id: "mint-nft" });
-      return null;
+      throw error; // Re-throw to handle in the calling function
     } finally {
       setWeb3State(prev => ({ ...prev, isLoading: false }));
     }
@@ -739,6 +768,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       
       // Update the NFTs list
       getAllNFTs();
+
+      // Update balances after purchase
+      await updateBalances();
       
       setWeb3State(prev => ({ ...prev, isLoading: false }));
       toast.success("You successfully purchased this NFT!");
@@ -898,35 +930,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   //   };
   // }, [provider, web3State.account]);
 
-// Function to update balances
-const updateBalances = async () => {
-  if (provider && web3State.account) {
-    try {
-      // Update sFuel balance
-      const newSFuelBalance = parseFloat(
-        ethers.utils.formatEther(await provider.getBalance(web3State.account))
-      );
 
-      // Update USDC balance
-      const usdcContract = new ethers.Contract(
-        USDC_CONTRACT_ADDRESS,
-        ['function balanceOf(address owner) view returns (uint256)'],
-        provider
-      );
-      const newUSDCBalance = parseFloat(
-        ethers.utils.formatUnits(await usdcContract.balanceOf(web3State.account), 6)
-      );
-
-      setWeb3State((prev) => ({
-        ...prev,
-        sFuelBalance: newSFuelBalance,
-        usdcBalance: newUSDCBalance,
-      }));
-    } catch (error) {
-      console.error("Error updating balances:", error);
-    }
-  }
-};
 
   return (
     <Web3Context.Provider

@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Mint() {
   const navigate = useNavigate();
-  const { web3State, connectWallet, requestSFuel, mintNFT } = useWeb3();
+  const { web3State, connectWallet, requestSFuel, mintNFT, updateBalances } = useWeb3();
   const { isConnected, account, sFuelBalance } = web3State;
   
   const [title, setTitle] = useState("");
@@ -80,22 +80,35 @@ export default function Mint() {
       return;
     }
     
-    if (!title || !description) {
+    if (!title || !description || parseFloat(price) <= 0) {
       toast.error("Please fill in all required fields");
       return;
     }
     
-    if (!checkSufficientSFuel(sFuelBalance)) {
-      requestSFuel();
-      return;
-    }
-    
     setIsMinting(true);
-    setMintingStep(1);
     
     try {
-      setMintingStep(1);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate upload delay
+      // Check and request sFuel if needed
+      if (!checkSufficientSFuel(sFuelBalance)) {
+        setMintingStep(1);
+        toast.loading("Obtaining sFUEL for gas...", { id: "sfuel-toast" });
+        
+        try {
+          await requestSFuel();
+          toast.success("sFUEL obtained successfully", { id: "sfuel-toast" });
+          // Force balance update after requesting sFuel
+          await updateBalances();
+        } catch (sFuelError) {
+          toast.error("Failed to obtain sFUEL. Please try again.", { id: "sfuel-toast" });
+          setIsMinting(false);
+          return;
+        }
+      }
+      
+      // Now proceed with image upload and minting
+      setMintingStep(2);
+      toast.loading("Minting NFT...", { id: "mint-toast" });
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay for UI feedback
       
       const metadata = {
         description,
@@ -118,9 +131,8 @@ export default function Mint() {
         name: title,
         keyvalues: metadata
       }));
-      formData.append("pinataOptions", options);  
-      console.log(formData);
-      console.log(import.meta.env.VITE_PINATA_JWT);
+      formData.append("pinataOptions", options);
+      
       const res = await fetch(
         "https://api.pinata.cloud/pinning/pinFileToIPFS",
         {
@@ -141,10 +153,12 @@ export default function Mint() {
       const resData = await res.json();
       console.log("Pinata upload response:", resData);
 
-      setMintingStep(2);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate metadata upload delay
-      
       setMintingStep(3);
+      toast.loading("Minting NFT...", { id: "mint-toast" });
+      await new Promise(resolve => setTimeout(resolve, 800)); // Small delay for UI feedback
+      
+      setMintingStep(4);
+      toast.loading("Minting NFT...", { id: "mint-toast" });
       
       const result = await mintNFT({
         ipfsHash: resData.IpfsHash,
@@ -155,7 +169,7 @@ export default function Mint() {
       });
       
       if (result) {
-        toast.success("NFT minted successfully!");
+        toast.success("NFT minted successfully!", { id: "mint-toast" });
       
         // Reset form
         setTitle("");
@@ -167,7 +181,7 @@ export default function Mint() {
       }
     } catch (error) {
       console.error("Error minting NFT:", error);
-      toast.error("Failed to mint NFT. Please try again.");
+      toast.error("Failed to mint NFT ", { id: "mint-toast" });
     } finally {
       setIsMinting(false);
       setMintingStep(0);
@@ -395,10 +409,13 @@ export default function Mint() {
               {isMinting ? (
                 <div className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></span>
-                  {mintingStep === 1 && "Uploading image to IPFS..."}
-                  {mintingStep === 2 && "Uploading metadata to IPFS..."}
+                  {mintingStep === 1 && "Obtaining sFUEL for gas..."}
+                  {mintingStep === 2 && "Minting NFT..."}
                   {mintingStep === 3 && "Minting NFT..."}
+                  {mintingStep === 4 && "Minting NFT..."}
                 </div>
+               ) : !isConnected ? (
+                "Connect Wallet to Mint"
               ) : (
                 "Mint NFT"
               )}

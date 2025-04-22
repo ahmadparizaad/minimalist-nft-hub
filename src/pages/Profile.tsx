@@ -1523,9 +1523,9 @@ export default function Profile() {
           </DialogHeader>
 
           <Tabs defaultValue="nfts">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="nfts">Select NFT</TabsTrigger>
-              <TabsTrigger value="url">Enter URL</TabsTrigger>
+              {/* <TabsTrigger value="url">Enter URL</TabsTrigger> */}
             </TabsList>
 
             <TabsContent value="nfts" className="py-4">
@@ -1559,7 +1559,7 @@ export default function Profile() {
               </div>
             </TabsContent>
 
-            <TabsContent value="url" className="py-4">
+            {/* <TabsContent value="url" className="py-4">
               <div className="grid gap-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="profileImageURL" className="text-right">
@@ -1586,7 +1586,7 @@ export default function Profile() {
                   </div>
                 )}
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
 
           <DialogFooter className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">

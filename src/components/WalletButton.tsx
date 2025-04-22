@@ -38,11 +38,14 @@ export function WalletButton() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem 
-            className="flex justify-between cursor-pointer"
+            className="flex justify-between items-center cursor-pointer"
             onClick={updateBalances}
           >
             <span>Balance:</span>
-            <span className="font-medium">{usdcBalance.toFixed(2)} USDC</span>
+            <div className="flex items-center">
+              <span className="font-medium">{usdcBalance.toFixed(2)} USDC</span>
+              
+            </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem 

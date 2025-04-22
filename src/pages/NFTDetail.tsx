@@ -163,6 +163,11 @@ useEffect(() => {
       return;
     }
 
+    if (!checkSufficientSFuel(sFuelBalance)) {
+      requestSFuel();
+      return;
+    }
+
     if (!checkSufficientBalance(usdcBalance, nft.price)) {
       setShowInsufficientFundsDialog(true);
       return;
@@ -170,11 +175,6 @@ useEffect(() => {
 
     setIsPurchasing(true);
     try {
-      if (!checkSufficientSFuel(sFuelBalance)) {
-        requestSFuel();
-        return;
-      }
-
       await buyNFTOnChain(parseInt(nft.tokenId.toString()));
       const updatedNftResponse = await nftAPI.getNFTById(id || "");
       setNft(updatedNftResponse.data);
